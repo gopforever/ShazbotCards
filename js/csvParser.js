@@ -61,7 +61,7 @@ const CSVParser = (() => {
     const s = (raw || '').trim();
     if (s === '' || s === '-') return null;
     // Remove commas (e.g. "1,150.0%") then strip "%"
-    const num = parseFloat(s.replace(/,/g, '').replace('%', ''));
+    const num = parseFloat(s.replace(/,/g, '').replace(/%/g, ''));
     return isNaN(num) ? null : num;
   }
 

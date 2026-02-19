@@ -44,10 +44,15 @@
       allListings = Analyzer.enrichWithScores(raw);
       filteredListings = [...allListings];
       setStatus(`Loaded ${allListings.length} listings — ${label}`, 'success');
-      renderAll();
     } catch (err) {
       setStatus('Error parsing CSV: ' + err.message, 'error');
       console.error(err);
+      return;
+    }
+    try {
+      renderAll();
+    } catch (err) {
+      console.error('Render error:', err);
     }
   }
 

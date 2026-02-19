@@ -53,9 +53,26 @@ const Charts = (() => {
     };
   }
 
+  function chartAvailable(canvasId) {
+    if (typeof Chart === 'undefined') {
+      console.warn('Chart.js not loaded — skipping chart render for', canvasId);
+      const ctx = document.getElementById(canvasId);
+      if (ctx) {
+        const msg = document.createElement('p');
+        msg.style.cssText = 'color:#8888a0;font-size:0.85rem;text-align:center;padding:20px;';
+        msg.textContent = 'Chart unavailable (Chart.js blocked by browser extension)';
+        ctx.parentNode.insertBefore(msg, ctx);
+        ctx.style.display = 'none';
+      }
+      return false;
+    }
+    return true;
+  }
+
   // ─── Promoted vs Organic Bar Chart ─────────────────────────────────────────
 
   function renderPromotedVsOrganic(canvasId, data) {
+    if (!chartAvailable(canvasId)) return;
     destroyChart(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
@@ -88,6 +105,7 @@ const Charts = (() => {
   // ─── Sport Breakdown Doughnut Chart ────────────────────────────────────────
 
   function renderSportBreakdown(canvasId, breakdown) {
+    if (!chartAvailable(canvasId)) return;
     destroyChart(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
@@ -125,6 +143,7 @@ const Charts = (() => {
   // ─── Sport Bar Chart (count + impressions) ─────────────────────────────────
 
   function renderSportBar(canvasId, breakdown) {
+    if (!chartAvailable(canvasId)) return;
     destroyChart(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
@@ -152,6 +171,7 @@ const Charts = (() => {
   // ─── Trending Bar Charts ────────────────────────────────────────────────────
 
   function renderTrendingChart(canvasId, listings, getChange, direction) {
+    if (!chartAvailable(canvasId)) return;
     destroyChart(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
@@ -186,6 +206,7 @@ const Charts = (() => {
   // ─── Health Score distribution ──────────────────────────────────────────────
 
   function renderHealthDistribution(canvasId, listings) {
+    if (!chartAvailable(canvasId)) return;
     destroyChart(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
