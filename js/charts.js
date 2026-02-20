@@ -237,6 +237,216 @@ const Charts = (() => {
     });
   }
 
+  // ─── Impressions Over Time Line Chart ──────────────────────────────────────
+
+  function renderImpressionsOverTime(canvasId, aggregateTrend) {
+    if (!chartAvailable(canvasId)) return;
+    destroyChart(canvasId);
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    const labels = aggregateTrend.map(d => d.label);
+
+    chartInstances[canvasId] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Total Impressions',
+            data: aggregateTrend.map(d => d.totalImpressions),
+            borderColor: COLORS.blue,
+            backgroundColor: COLORS.blue + '22',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+          },
+          {
+            label: 'Promoted',
+            data: aggregateTrend.map(d => d.promotedImpressions),
+            borderColor: COLORS.purple,
+            backgroundColor: COLORS.purple + '11',
+            fill: false,
+            tension: 0.3,
+            borderDash: [5, 3],
+            pointRadius: 3,
+          },
+          {
+            label: 'Organic',
+            data: aggregateTrend.map(d => d.organicImpressions),
+            borderColor: COLORS.green,
+            backgroundColor: COLORS.green + '11',
+            fill: false,
+            tension: 0.3,
+            borderDash: [3, 3],
+            pointRadius: 3,
+          },
+        ],
+      },
+      options: defaultOptions(),
+    });
+  }
+
+  // ─── CTR Trend Line Chart ───────────────────────────────────────────────────
+
+  function renderCTRTrend(canvasId, aggregateTrend) {
+    if (!chartAvailable(canvasId)) return;
+    destroyChart(canvasId);
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    const labels = aggregateTrend.map(d => d.label);
+    const ctrs = aggregateTrend.map(d => d.avgCTR);
+
+    // Simple moving average trendline
+    const trendline = ctrs.map((_, i) => {
+      const window = ctrs.slice(Math.max(0, i - 1), i + 2);
+      return parseFloat((window.reduce((a, b) => a + b, 0) / window.length).toFixed(2));
+    });
+
+    chartInstances[canvasId] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Avg CTR (%)',
+            data: ctrs,
+            borderColor: COLORS.cyan,
+            backgroundColor: COLORS.cyan + '22',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+          },
+          {
+            label: 'Moving Avg',
+            data: trendline,
+            borderColor: COLORS.yellow,
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            borderDash: [6, 3],
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: defaultOptions({
+        scales: {
+          x: { ticks: { color: '#9090a0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: {
+            ticks: { color: '#9090a0', callback: v => v + '%' },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+          },
+        },
+      }),
+    });
+  }
+
+  // ─── Health Score Distribution Over Time (Stacked Area) ────────────────────
+
+  function renderHealthOverTime(canvasId, aggregateTrend) {
+    if (!chartAvailable(canvasId)) return;
+    destroyChart(canvasId);
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    const labels = aggregateTrend.map(d => d.label);
+
+    // Convert to percentages
+    const toPercent = (d, zone) => {
+      const total = (d.healthZones.green || 0) + (d.healthZones.yellow || 0) + (d.healthZones.red || 0);
+      if (!total) return 0;
+      return parseFloat(((d.healthZones[zone] || 0) / total * 100).toFixed(1));
+    };
+
+    chartInstances[canvasId] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: '🟢 Healthy',
+            data: aggregateTrend.map(d => toPercent(d, 'green')),
+            borderColor: COLORS.green,
+            backgroundColor: COLORS.green + '55',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            stack: 'health',
+          },
+          {
+            label: '🟡 At Risk',
+            data: aggregateTrend.map(d => toPercent(d, 'yellow')),
+            borderColor: COLORS.yellow,
+            backgroundColor: COLORS.yellow + '44',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            stack: 'health',
+          },
+          {
+            label: '🔴 Critical',
+            data: aggregateTrend.map(d => toPercent(d, 'red')),
+            borderColor: COLORS.red,
+            backgroundColor: COLORS.red + '44',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            stack: 'health',
+          },
+        ],
+      },
+      options: defaultOptions({
+        scales: {
+          x: { ticks: { color: '#9090a0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: {
+            ticks: { color: '#9090a0', callback: v => v + '%' },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            max: 100,
+          },
+        },
+      }),
+    });
+  }
+
+  // ─── Top Listings Impressions Over Time ─────────────────────────────────────
+
+  function renderTopListingsOverTime(canvasId, topListingTimelines, allReportLabels) {
+    if (!chartAvailable(canvasId)) return;
+    destroyChart(canvasId);
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+
+    const palette = [COLORS.blue, COLORS.green, COLORS.yellow, COLORS.orange, COLORS.cyan];
+
+    const datasets = topListingTimelines.map((entry, i) => {
+      // Build data points aligned to allReportLabels
+      const dataMap = {};
+      entry.snapshots.forEach(snap => { dataMap[snap.uploadedAt] = snap.totalImpressions; });
+      const data = allReportLabels.map(r => dataMap[r.uploadedAt] !== undefined ? dataMap[r.uploadedAt] : null);
+
+      return {
+        label: truncate(entry.title, 28),
+        data,
+        borderColor: palette[i % palette.length],
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.3,
+        pointRadius: 4,
+        spanGaps: true,
+      };
+    });
+
+    chartInstances[canvasId] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: allReportLabels.map(r => r.label),
+        datasets,
+      },
+      options: defaultOptions(),
+    });
+  }
+
   function truncate(str, len) {
     return str && str.length > len ? str.substring(0, len) + '…' : str;
   }
@@ -247,6 +457,10 @@ const Charts = (() => {
     renderSportBar,
     renderTrendingChart,
     renderHealthDistribution,
+    renderImpressionsOverTime,
+    renderCTRTrend,
+    renderHealthOverTime,
+    renderTopListingsOverTime,
     destroyChart,
   };
 })();
