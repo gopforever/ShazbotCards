@@ -29,6 +29,7 @@
     setupModeToggle();
     setupCompare();
     setupExportImport();
+    setupTitleOptimizer();
     renderHistorySidebar();
     loadDefaultCSV();
   });
@@ -769,10 +770,18 @@
             <div class="detail-item"><label>Health Score</label><span style="color:${listing.healthBadge === 'green' ? '#4caf50' : listing.healthBadge === 'yellow' ? '#ffc107' : '#f44336'}">${listing.healthScore}/100</span></div>
             <div class="detail-item detail-full"><label>Recommendation</label><span class="rec-text">${esc(listing.recommendation?.text || '-')}</span></div>
           </div>
+          <div class="detail-actions">
+            <button class="btn-sm btn-primary btn-optimize-title">🤖 Optimize Title</button>
+          </div>
         </div>
       </td>
     `;
     tr.after(detailTr);
+
+    const optimizeBtn = detailTr.querySelector('.btn-optimize-title');
+    if (optimizeBtn) {
+      optimizeBtn.addEventListener('click', () => openTitleOptimizer(listing.itemId));
+    }
   }
 
   function sortListings(listings) {
@@ -1033,6 +1042,324 @@
     el.textContent = msg;
     el.className = 'status-bar status-' + type;
     el.style.display = 'block';
+  }
+
+  // ─── Title Optimizer ───────────────────────────────────────────────────────
+
+  // ─── Title Optimizer ───────────────────────────────────────────────────────
+
+  function setupTitleOptimizer() {
+    const hasToken = TitleOptimizer.hasValidToken();
+    const setupPanel = document.getElementById('ai-setup-panel');
+    const controls = document.getElementById('ai-controls');
+
+    if (hasToken) {
+      if (setupPanel) setupPanel.style.display = 'none';
+      if (controls) controls.style.display = '';
+    }
+
+    const saveBtn = document.getElementById('btn-save-token');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const tokenInput = document.getElementById('github-token-input');
+        const token = tokenInput ? tokenInput.value : '';
+        if (TitleOptimizer.saveToken(token)) {
+          setStatus('GitHub token saved successfully', 'success');
+          if (setupPanel) setupPanel.style.display = 'none';
+          if (controls) controls.style.display = '';
+        } else {
+          setStatus('Invalid token — must be at least 10 characters', 'error');
+        }
+      });
+    }
+
+    const clearBtn = document.getElementById('btn-clear-token');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        TitleOptimizer.clearToken();
+        if (setupPanel) setupPanel.style.display = '';
+        if (controls) controls.style.display = 'none';
+        const tokenInput = document.getElementById('github-token-input');
+        if (tokenInput) tokenInput.value = '';
+        setStatus('GitHub token cleared', 'info');
+      });
+    }
+
+    const bulkBtn = document.getElementById('btn-bulk-optimize');
+    if (bulkBtn) {
+      bulkBtn.addEventListener('click', runBulkOptimization);
+    }
+
+    // Modal close button
+    const closeBtn = document.getElementById('btn-modal-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeTitleOptimizer);
+    }
+
+    // Close modal on backdrop click
+    const modal = document.getElementById('title-optimizer-modal');
+    if (modal) {
+      modal.addEventListener('click', e => {
+        if (e.target === modal) closeTitleOptimizer();
+      });
+    }
+  }
+
+  function openTitleOptimizer(itemId) {
+    const listing = allListings.find(l => l.itemId === itemId);
+    if (!listing) return;
+
+    if (!TitleOptimizer.hasValidToken()) {
+      setStatus('Please save your GitHub token in the AI Title Optimizer section first', 'warning');
+      const section = document.querySelector('.ai-optimizer-section');
+      if (section) section.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    const modal = document.getElementById('title-optimizer-modal');
+    if (modal) modal.style.display = 'flex';
+
+    // Populate current title info
+    setText('current-title-text', listing.title);
+    const lenEl = document.getElementById('current-title-length');
+    if (lenEl) lenEl.textContent = `${listing.title.length}/80`;
+
+    // Analyze and display score
+    const analysis = TitleOptimizer.analyzeTitleQuality(listing, allListings);
+    renderTitleAnalysis(analysis);
+
+    // Context performance
+    setText('ctx-impressions', (listing.totalImpressions || 0).toLocaleString());
+    setText('ctx-ctr', fmtPct(listing.ctr));
+    setText('ctx-health', (listing.healthScore || 0) + '/100');
+
+    // Clear old suggestions
+    const suggestionsEl = document.getElementById('suggestions-list');
+    if (suggestionsEl) suggestionsEl.innerHTML = '';
+
+    // Wire up generate button
+    const generateBtn = document.getElementById('btn-generate-titles');
+    if (generateBtn) {
+      // Clone to remove old listeners
+      const fresh = generateBtn.cloneNode(true);
+      generateBtn.parentNode.replaceChild(fresh, generateBtn);
+      fresh.addEventListener('click', () => generateAndShowSuggestions(listing));
+    }
+
+    // Track titles analyzed count
+    const analyzedEl = document.getElementById('titles-analyzed');
+    if (analyzedEl) {
+      analyzedEl.textContent = parseInt(analyzedEl.textContent || '0', 10) + 1;
+    }
+  }
+
+  function closeTitleOptimizer() {
+    const modal = document.getElementById('title-optimizer-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function renderTitleAnalysis(analysis) {
+    const fill = document.getElementById('current-score-fill');
+    if (fill) fill.style.width = `${analysis.total}%`;
+    setText('current-score-value', `${analysis.total}/100`);
+
+    const bd = analysis.breakdown;
+    setText('score-keywords', `${bd.keywords}/30`);
+    setText('score-length', `${bd.length}/20`);
+    setText('score-power', `${bd.powerWords}/15`);
+    setText('score-specificity', `${bd.specificity}/15`);
+    setText('score-readability', `${bd.readability}/10`);
+    setText('score-sport', `${bd.sportMatch}/10`);
+  }
+
+  async function generateAndShowSuggestions(listing) {
+    const loadingEl = document.getElementById('suggestions-loading');
+    const listEl = document.getElementById('suggestions-list');
+    const generateBtn = document.getElementById('btn-generate-titles');
+
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (listEl) listEl.innerHTML = '';
+    if (generateBtn) generateBtn.disabled = true;
+
+    try {
+      const suggestions = await TitleOptimizer.generateOptimizedTitles(listing, allListings);
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (generateBtn) generateBtn.disabled = false;
+      renderSuggestions(suggestions, listing);
+
+      // Update avg improvement stat
+      if (suggestions.length > 0) {
+        const avgImp = Math.round(
+          suggestions.reduce((s, sg) => s + sg.estimatedCTRImprovement, 0) / suggestions.length
+        );
+        const avgEl = document.getElementById('avg-improvement');
+        if (avgEl) avgEl.textContent = `+${avgImp}%`;
+      }
+    } catch (err) {
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (generateBtn) generateBtn.disabled = false;
+      setStatus('Failed to generate suggestions: ' + err.message, 'error');
+    }
+  }
+
+  function renderSuggestions(suggestions, listing) {
+    const listEl = document.getElementById('suggestions-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    if (!suggestions || suggestions.length === 0) {
+      listEl.innerHTML = '<p class="empty-state">No suggestions generated. Try again.</p>';
+      return;
+    }
+
+    suggestions.forEach((sugg, idx) => {
+      const card = document.createElement('div');
+      card.className = 'suggestion-card';
+
+      const improvementBadge = sugg.estimatedCTRImprovement > 0
+        ? `<span class="improvement-badge">+${sugg.estimatedCTRImprovement}% CTR</span>`
+        : '';
+
+      card.innerHTML = `
+        <div class="suggestion-header">
+          <span class="suggestion-rank">#${idx + 1}</span>
+          ${improvementBadge}
+          <span class="char-count">${sugg.title.length}/80</span>
+        </div>
+        <div class="suggestion-title">${esc(sugg.title)}</div>
+        <div class="suggestion-score">Quality Score: <strong>${sugg.qualityScore}/100</strong></div>
+        <div class="suggestion-actions">
+          <button class="btn-sm btn-primary btn-copy-title">📋 Copy</button>
+          <button class="btn-sm btn-secondary btn-compare-title">🔍 Compare</button>
+        </div>
+      `;
+
+      card.dataset.suggTitle = sugg.title;
+      card.querySelector('.btn-copy-title').addEventListener('click', () => copyToClipboard(sugg.title));
+      card.querySelector('.btn-compare-title').addEventListener('click', () => showDiff(listing.title, sugg.title, card));
+
+      listEl.appendChild(card);
+    });
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setStatus('Title copied to clipboard!', 'success');
+      }).catch(() => {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      setStatus('Title copied to clipboard!', 'success');
+    } catch (e) {
+      setStatus('Could not copy — please copy manually: ' + text, 'info');
+    }
+    ta.remove();
+  }
+
+  function showDiff(original, suggestion, card) {
+    const origWords = original.split(/\s+/);
+    const suggWords = suggestion.split(/\s+/);
+
+    const diffHtml = suggWords.map(word => {
+      const isNew = !origWords.some(ow => ow.toLowerCase() === word.toLowerCase());
+      return isNew
+        ? `<mark class="diff-new">${esc(word)}</mark>`
+        : esc(word);
+    }).join(' ');
+
+    const existing = card.querySelector('.diff-view');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    const diffDiv = document.createElement('div');
+    diffDiv.className = 'diff-view';
+    diffDiv.innerHTML = `<strong>Changes vs original:</strong><br>${diffHtml}`;
+    card.querySelector('.suggestion-actions').before(diffDiv);
+  }
+
+  async function runBulkOptimization() {
+    if (!TitleOptimizer.hasValidToken()) {
+      setStatus('Please save your GitHub token first', 'warning');
+      return;
+    }
+
+    const targetListings = allListings
+      .filter(l => l.healthBadge === 'red' || l.healthBadge === 'yellow')
+      .slice(0, 20);
+
+    if (targetListings.length === 0) {
+      setStatus('No listings need optimization!', 'info');
+      return;
+    }
+
+    const progressBar = document.getElementById('bulk-progress-bar');
+    const statusEl = document.getElementById('bulk-status');
+    const progressWrapper = document.getElementById('bulk-progress');
+    const bulkBtn = document.getElementById('btn-bulk-optimize');
+
+    if (progressWrapper) progressWrapper.style.display = 'block';
+    if (bulkBtn) bulkBtn.disabled = true;
+
+    let results = [];
+
+    try {
+      results = await TitleOptimizer.optimizeBulkListings(
+        targetListings,
+        allListings,
+        (i, total, listing) => {
+          if (progressBar) progressBar.value = Math.round(((i + 1) / total) * 100);
+          if (statusEl) statusEl.textContent = `Optimizing ${i + 1} of ${total}: ${truncate(listing.title, 40)}`;
+        }
+      );
+    } catch (err) {
+      setStatus('Bulk optimization stopped: ' + err.message, 'error');
+    }
+
+    if (progressWrapper) progressWrapper.style.display = 'none';
+    if (bulkBtn) bulkBtn.disabled = false;
+
+    if (results.length > 0) {
+      exportOptimizedTitles(results);
+      setStatus(`Optimized ${results.length} listing(s)! CSV downloaded.`, 'success');
+
+      // Update avg improvement stat
+      const avgImp = Math.round(
+        results.reduce((s, r) => s + (r.improvement || 0), 0) / results.length
+      );
+      const avgEl = document.getElementById('avg-improvement');
+      if (avgEl) avgEl.textContent = `+${avgImp}%`;
+    } else {
+      setStatus('No titles were optimized. Check your token and try again.', 'warning');
+    }
+  }
+
+  function exportOptimizedTitles(results) {
+    const headers = ['eBay Item ID', 'Current Title', 'Optimized Title', 'Est. CTR Improvement'];
+    const rows = results.map(r => [
+      r.itemId,
+      `"${(r.oldTitle || '').replace(/"/g, '""')}"`,
+      `"${(r.newTitle || '').replace(/"/g, '""')}"`,
+      (r.improvement || 0) + '%',
+    ]);
+
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    downloadText(csv, 'optimized-titles.csv', 'text/csv');
   }
 
 })();

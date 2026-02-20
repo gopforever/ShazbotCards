@@ -305,6 +305,54 @@
     </div>
   </section>
 
+  <!-- ── AI Title Optimizer Section ──────────────────────────────────────── -->
+  <section class="ai-optimizer-section dash-card" aria-label="AI Title Optimizer">
+    <h2 class="section-title"><span class="icon">🤖</span> AI Title Optimizer</h2>
+
+    <!-- API Key Setup Panel (shows if no token stored) -->
+    <div id="ai-setup-panel" class="ai-setup-panel">
+      <p>Enable AI-powered title suggestions using <strong>GitHub Models</strong> (free tier)</p>
+      <input type="password" id="github-token-input" placeholder="GitHub Personal Access Token" aria-label="GitHub Personal Access Token" />
+      <button id="btn-save-token" class="btn-primary">Save Token</button>
+      <a href="https://github.com/settings/tokens" target="_blank" rel="noopener" class="token-link">Get a token →</a>
+      <p class="token-note">Your token is stored locally in your browser only and is never sent to our servers.</p>
+    </div>
+
+    <!-- Optimizer Controls (shown once token is saved) -->
+    <div id="ai-controls" class="ai-controls" style="display:none">
+      <div class="optimizer-stats">
+        <div class="stat-card">
+          <label>Titles Analyzed</label>
+          <span id="titles-analyzed">0</span>
+        </div>
+        <div class="stat-card">
+          <label>Avg Improvement</label>
+          <span id="avg-improvement">-</span>
+        </div>
+        <div class="stat-card">
+          <label>Token Status</label>
+          <span class="badge badge-good">✓ Active</span>
+        </div>
+        <div class="stat-card">
+          <label>Actions</label>
+          <button id="btn-clear-token" class="btn-sm btn-danger">Clear Token</button>
+        </div>
+      </div>
+
+      <div class="bulk-optimizer">
+        <h3>Bulk Optimize Low-Performing Listings</h3>
+        <p>Automatically generate optimized titles for listings with red or yellow health scores</p>
+        <button id="btn-bulk-optimize" class="btn-primary">
+          🚀 Optimize Red &amp; Yellow Listings
+        </button>
+        <div id="bulk-progress" style="display:none">
+          <progress id="bulk-progress-bar" max="100" value="0" aria-label="Bulk optimization progress"></progress>
+          <span id="bulk-status"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Full Listing Table ────────────────────────────────────────────── -->
   <section class="full-table-section dash-card" aria-label="All Listings">
     <h2 class="section-title"><span class="icon">📋</span> All Listings</h2>
@@ -445,12 +493,96 @@
 
   </div>
 
+  <!-- ── Title Optimizer Modal ────────────────────────────────────────────── -->
+  <div id="title-optimizer-modal" class="modal" role="dialog" aria-modal="true" aria-label="AI Title Optimizer" style="display:none">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>🤖 AI Title Optimizer</h2>
+        <button class="modal-close" id="btn-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Current Title Analysis -->
+        <div class="current-title-section">
+          <h3>Current Title</h3>
+          <div class="title-display">
+            <span id="current-title-text"></span>
+            <span id="current-title-length" class="char-count"></span>
+          </div>
+          <div class="title-score">
+            <label>Quality Score:</label>
+            <div class="score-bar" role="progressbar" aria-label="Title quality score">
+              <div id="current-score-fill" class="score-fill"></div>
+            </div>
+            <span id="current-score-value"></span>
+          </div>
+
+          <!-- Score Breakdown -->
+          <div class="score-breakdown">
+            <div class="score-item">
+              <span>Keywords</span>
+              <span id="score-keywords"></span>
+            </div>
+            <div class="score-item">
+              <span>Length</span>
+              <span id="score-length"></span>
+            </div>
+            <div class="score-item">
+              <span>Power Words</span>
+              <span id="score-power"></span>
+            </div>
+            <div class="score-item">
+              <span>Specificity</span>
+              <span id="score-specificity"></span>
+            </div>
+            <div class="score-item">
+              <span>Readability</span>
+              <span id="score-readability"></span>
+            </div>
+            <div class="score-item">
+              <span>Sport Match</span>
+              <span id="score-sport"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Suggestions -->
+        <div class="suggestions-section">
+          <h3>AI-Generated Suggestions</h3>
+          <button id="btn-generate-titles" class="btn-primary">
+            ✨ Generate Optimized Titles
+          </button>
+
+          <div id="suggestions-loading" style="display:none">
+            <div class="spinner" aria-label="Loading"></div>
+            <p>Analyzing and generating optimized titles…</p>
+          </div>
+
+          <div id="suggestions-list" class="suggestions-list" aria-live="polite">
+            <!-- Suggestions inserted here -->
+          </div>
+        </div>
+
+        <!-- Listing Performance Context -->
+        <div class="context-section">
+          <h4>Current Performance</h4>
+          <div class="context-stats">
+            <span>Impressions: <strong id="ctx-impressions"></strong></span>
+            <span>CTR: <strong id="ctx-ctr"></strong></span>
+            <span>Health: <strong id="ctx-health"></strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── Scripts ───────────────────────────────────────────────────────────── -->
 <script src="js/csvParser.js"></script>
 <script src="js/analyzer.js"></script>
 <script src="js/keywordAnalyzer.js"></script>
+<script src="js/titleOptimizer.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/trends.js"></script>
