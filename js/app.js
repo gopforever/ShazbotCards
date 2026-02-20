@@ -38,6 +38,7 @@
     setupDebugConsoleButton();
     renderHistorySidebar();
     loadDefaultCSV();
+    if (typeof eBayUI !== 'undefined') eBayUI.injectConfigPanel();
   });
 
   // ─── CSV Loading ───────────────────────────────────────────────────────────
@@ -817,6 +818,7 @@
             <button class="btn-sm btn-primary btn-optimize-title">🤖 Optimize Title</button>
             <button class="btn-sm btn-secondary btn-view-performance">📊 Performance Prediction</button>
           </div>
+          <div class="ebay-detail-comparison" id="ebay-detail-${esc(listing.itemId)}"></div>
         </div>
       </td>
     `;
@@ -829,6 +831,16 @@
     const perfBtn = detailTr.querySelector('.btn-view-performance');
     if (perfBtn) {
       perfBtn.addEventListener('click', () => openPerfModal(listing));
+    }
+
+    // Inject eBay comparison widget if the integration is loaded
+    if (typeof eBayUI !== 'undefined') {
+      const comparisonEl = detailTr.querySelector(`#ebay-detail-${listing.itemId}`);
+      if (comparisonEl) {
+        const listingMap = eBaySync.getListingMap();
+        const ebayItemID = listingMap[listing.itemId] || null;
+        comparisonEl.innerHTML = eBayUI.buildComparisonWidget(listing, '', ebayItemID);
+      }
     }
   }
 
@@ -1317,6 +1329,25 @@
         </div>`
       : '';
 
+    // eBay push action — shown when eBay is configured
+    const ebayPushSection = (typeof eBayUI !== 'undefined' && eBayConfig.isConfigured())
+      ? (() => {
+          const listingMap = eBaySync.getListingMap();
+          const ebayItemID = listingMap[listing.itemId] || null;
+          if (!ebayItemID) return '';
+          const improvement = pred.predictedImpactWithChanges - pred.saleProbability;
+          return `
+            <div class="perf-ebay-push-section">
+              <p>Current Performance: <strong>${pred.saleProbability}%</strong></p>
+              ${improvement > 0 ? `<p>After Pushing Optimized Title: <strong>${pred.predictedImpactWithChanges}% (+${improvement}%)</strong></p>` : ''}
+              <button class="ebay-btn ebay-btn-primary ebay-perf-push-btn" style="margin-top:8px"
+                data-ebay-id="${esc(ebayItemID)}">
+                📤 Push to eBay and Improve Performance
+              </button>
+            </div>`;
+        })()
+      : '';
+
     // TODO: future — "Apply Suggestions" button for automated improvement
     // TODO: future — historical prediction accuracy tracking
     // TODO: future — integration with Title Optimizer (show predicted impact of title changes)
@@ -1334,6 +1365,7 @@
       ${pred.factors.length ? `<div class="perf-factors-section"><h3>Analysis Factors</h3>${factorsHtml}</div>` : ''}
       ${pred.recommendations.length ? `<div class="perf-recs-section" style="margin-top:16px"><h3>Recommendations</h3>${recsHtml}</div>` : ''}
       ${impactSection}
+      ${ebayPushSection}
     `;
   }
 
@@ -1666,12 +1698,22 @@
         <div class="suggestion-actions">
           <button class="btn-sm btn-primary btn-copy-title">📋 Copy</button>
           <button class="btn-sm btn-secondary btn-compare-title">🔍 Compare</button>
+          ${typeof eBayUI !== 'undefined' && eBayConfig.isConfigured() ? '<button class="btn-sm btn-secondary btn-push-ebay">📤 Push to eBay</button>' : ''}
         </div>
       `;
 
       card.dataset.suggTitle = sugg.title;
       card.querySelector('.btn-copy-title').addEventListener('click', () => copyToClipboard(sugg.title));
       card.querySelector('.btn-compare-title').addEventListener('click', () => showDiff(listing.title, sugg.title, card));
+
+      const pushBtn = card.querySelector('.btn-push-ebay');
+      if (pushBtn) {
+        pushBtn.addEventListener('click', () => {
+          const listingMap = eBaySync.getListingMap();
+          const ebayItemID = listingMap[listing.itemId] || null;
+          eBayUI.openPushModal(ebayItemID || listing.itemId, listing.title, sugg.title);
+        });
+      }
 
       listEl.appendChild(card);
     });
