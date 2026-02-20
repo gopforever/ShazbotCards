@@ -412,3 +412,87 @@ const eBayAPIFactory = {
     _apiInstance = null;
   },
 };
+
+// ─── OAuth + Proxy API class ──────────────────────────────────────────────────
+
+/**
+ * eBayAPI — Makes eBay API calls via a backend proxy using OAuth 2.0 tokens.
+ * Used when the user has connected their account via the OAuth flow.
+ */
+class eBayAPI {
+  /**
+   * @param {object} config
+   * @param {string}    config.proxyURL   Backend proxy base URL
+   * @param {eBayOAuth} config.oauth      eBayOAuth instance for token management
+   * @param {string}    [config.environment='production']
+   */
+  constructor(config) {
+    this.proxyURL    = config.proxyURL;
+    this.oauth       = config.oauth;
+    this.environment = config.environment || 'production';
+  }
+
+  /**
+   * Make an authenticated API call via the backend proxy.
+   * Automatically refreshes the token on 401 and retries once.
+   * @param {string} apiCall   eBay API call name (e.g. 'GetMyeBaySelling')
+   * @param {object} [body]    Request body payload
+   * @returns {Promise<object>}
+   */
+  async makeAPICall(apiCall, body) {
+    const token = await this.oauth.getAccessToken();
+
+    const response = await fetch(`${this.proxyURL}/api/ebay`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        apiCall,
+        body,
+        environment: this.environment,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Token may have expired server-side; refresh and retry once
+        await this.oauth.refreshToken();
+        return this.makeAPICall(apiCall, body);
+      }
+      throw new Error(`eBay API call failed: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Fetch active listings.
+   * @param {number} [page=1]
+   * @param {number} [entriesPerPage=200]
+   * @returns {Promise<object>}
+   */
+  async getMyeBaySelling(page = 1, entriesPerPage = 200) {
+    return this.makeAPICall('GetMyeBaySelling', { page, entriesPerPage });
+  }
+
+  /**
+   * Get a single listing by Item ID.
+   * @param {string} itemID
+   * @returns {Promise<object>}
+   */
+  async getItem(itemID) {
+    return this.makeAPICall('GetItem', { itemID });
+  }
+
+  /**
+   * Update a listing's title and/or price.
+   * @param {string} itemID
+   * @param {object} updates  { title?, price? }
+   * @returns {Promise<object>}
+   */
+  async reviseItem(itemID, updates) {
+    return this.makeAPICall('ReviseItem', { itemID, updates });
+  }
+}

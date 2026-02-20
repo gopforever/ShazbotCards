@@ -541,6 +541,66 @@ const eBayUI = (() => {
       .replace(/'/g, '&#39;');
   }
 
+  // ─── OAuth connect/disconnect widget ─────────────────────────────────────
+
+  /**
+   * Render (or re-render) the eBay OAuth connection widget inside #ebay-integration.
+   * Shows a connect button when disconnected and connection status when connected.
+   */
+  function rendereBayWidget() {
+    const widget = document.getElementById('ebay-integration');
+    if (!widget) return;
+
+    const oauth = window.ebayOAuth;
+    const isConnected = oauth && oauth.isConnected();
+
+    if (!isConnected) {
+      widget.innerHTML = `
+<div class="ebay-not-connected">
+  <h3>🔌 eBay Integration</h3>
+  <p>Connect your eBay account to sync listings and push optimizations.</p>
+  <button class="ebay-btn ebay-btn-primary btn-connect-ebay" onclick="connecteBay()">
+    🔗 Connect eBay Account
+  </button>
+  <p class="ebay-field-note">🔒 Secure OAuth 2.0 authentication</p>
+</div>`;
+    } else {
+      const username  = localStorage.getItem('ebay-username') || 'Unknown';
+      const expiry    = localStorage.getItem('ebay-token-expiry');
+      const expiresIn = expiry ? _getTimeUntilExpiry(parseInt(expiry, 10)) : 'Unknown';
+
+      widget.innerHTML = `
+<div class="ebay-connected">
+  <h3>🔌 eBay Integration</h3>
+  <div class="ebay-status-row">
+    <span class="ebay-status-indicator ebay-connected">✅ Connected</span>
+    <span class="ebay-account-label">Account: ${_escapeHtml(username)}</span>
+    <span class="ebay-expiry-label">Token expires: ${_escapeHtml(expiresIn)}</span>
+  </div>
+  <div class="ebay-action-row">
+    <button class="ebay-btn ebay-btn-primary" onclick="eBayUI.startSyncDown()">🔄 Sync from eBay</button>
+    <button class="ebay-btn ebay-btn-secondary" onclick="disconnecteBay()">⚙️ Disconnect</button>
+  </div>
+</div>`;
+    }
+  }
+
+  /**
+   * Return a human-readable string for how long until the token expires.
+   * @param {number} expiryMs  Epoch milliseconds
+   * @returns {string}
+   */
+  function _getTimeUntilExpiry(expiryMs) {
+    const diff = expiryMs - Date.now();
+    if (diff <= 0) return 'Expired';
+    const mins  = Math.floor(diff / 60000);
+    const hours = Math.floor(mins / 60);
+    const days  = Math.floor(hours / 24);
+    if (days > 0)  return `${days}d ${hours % 24}h`;
+    if (hours > 0) return `${hours}h ${mins % 60}m`;
+    return `${mins}m`;
+  }
+
   // ─── Public API ───────────────────────────────────────────────────────────
 
   return {
@@ -552,5 +612,25 @@ const eBayUI = (() => {
     buildComparisonWidget,
     showBulkPanel,
     showToast,
+    rendereBayWidget,
   };
 })();
+
+// ─── OAuth helpers (global scope for onclick attributes) ──────────────────────
+
+/** Initiate the eBay OAuth flow. */
+function connecteBay() {
+  if (window.ebayOAuth) {
+    window.ebayOAuth.initiateAuth();
+  }
+}
+
+/** Disconnect the eBay account after user confirmation. */
+function disconnecteBay() {
+  if (confirm('Are you sure you want to disconnect your eBay account?')) {
+    if (window.ebayOAuth) {
+      window.ebayOAuth.disconnect();
+    }
+    eBayUI.rendereBayWidget();
+  }
+}
