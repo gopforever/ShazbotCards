@@ -432,8 +432,10 @@
     renderCompareTable(rows);
 
     const exportBtn = document.getElementById('btn-export-trend-csv');
-    if (exportBtn) exportBtn.style.display = '';
-    exportBtn && (exportBtn.onclick = () => exportTrendCSV(rows, r1, r2));
+    if (exportBtn) {
+      exportBtn.style.display = '';
+      exportBtn.onclick = () => exportTrendCSV(rows, r1, r2);
+    }
   }
 
   function renderCompareTable(rows) {
@@ -526,22 +528,23 @@
     const headers = ['Item ID', 'Title', `${r1.filename} Impressions`, `${r2.filename} Impressions`, 'Impr % Change', 'CTR Change %', 'Views Change %', 'Sold Change %'];
     const lines = [headers.join(',')];
 
+    function pctChgStr(a, b) {
+      if (a === null || a === undefined || b === null || b === undefined) return 'N/A';
+      if (a === 0 && b === 0) return '0%';
+      if (a === 0) return 'N/A';
+      return (((b - a) / Math.abs(a)) * 100).toFixed(1) + '%';
+    }
+
     rows.forEach(row => {
-      function pctChg(a, b) {
-        if (a === null || b === null) return 'N/A';
-        if (a === 0 && b === 0) return '0';
-        if (a === 0) return 'N/A';
-        return (((b - a) / Math.abs(a)) * 100).toFixed(1) + '%';
-      }
       lines.push([
         row.itemId,
         `"${(row.title || '').replace(/"/g, '""')}"`,
         row.r1 ? row.r1.totalImpressions : '',
         row.r2 ? row.r2.totalImpressions : '',
-        pctChg(row.r1?.totalImpressions, row.r2?.totalImpressions),
-        pctChg(row.r1?.ctr, row.r2?.ctr),
-        pctChg(row.r1?.totalPageViews, row.r2?.totalPageViews),
-        pctChg(row.r1?.quantitySold, row.r2?.quantitySold),
+        pctChgStr(row.r1?.totalImpressions, row.r2?.totalImpressions),
+        pctChgStr(row.r1?.ctr, row.r2?.ctr),
+        pctChgStr(row.r1?.totalPageViews, row.r2?.totalPageViews),
+        pctChgStr(row.r1?.quantitySold, row.r2?.quantitySold),
       ].join(','));
     });
 

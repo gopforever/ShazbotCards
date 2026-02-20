@@ -39,7 +39,7 @@ const Storage = (() => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
       return true;
     } catch (e) {
-      if (e.name === 'QuotaExceededError' || e.code === 22) {
+      if (e.name === 'QuotaExceededError' || e.code === 22 /* legacy webkit */) {
         // Auto-cleanup: remove oldest reports until it fits
         if (store.reports.length > 1) {
           store.reports.sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));

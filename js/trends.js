@@ -6,6 +6,19 @@
 const Trends = (() => {
   'use strict';
 
+  // ─── Shared helpers ────────────────────────────────────────────────────────
+
+  /**
+   * Compute percentage change from a to b.
+   * Returns null when a is 0 (division by zero) or inputs are null/undefined.
+   */
+  function pctChange(a, b) {
+    if (a === null || a === undefined || b === null || b === undefined) return null;
+    if (a === 0 && b === 0) return 0;
+    if (a === 0) return null; // Cannot compute % change from zero baseline
+    return ((b - a) / Math.abs(a)) * 100;
+  }
+
   // ─── Cross-report listing matching ─────────────────────────────────────────
 
   /**
@@ -58,12 +71,6 @@ const Trends = (() => {
     if (snaps.length < 2) return null;
     const prev = snaps[snaps.length - 2];
     const curr = snaps[snaps.length - 1];
-
-    function pctChange(a, b) {
-      if (a === 0 && b === 0) return 0;
-      if (a === 0) return null;
-      return ((b - a) / Math.abs(a)) * 100;
-    }
 
     return {
       impressionsChange: pctChange(prev.totalImpressions, curr.totalImpressions),
@@ -205,14 +212,6 @@ const Trends = (() => {
     allIds.forEach(id => {
       const l1 = map1[id];
       const l2 = map2[id];
-
-      function pctChange(a, b) {
-        if (a === null || a === undefined) return null;
-        if (b === null || b === undefined) return null;
-        if (a === 0 && b === 0) return 0;
-        if (a === 0) return null;
-        return ((b - a) / Math.abs(a)) * 100;
-      }
 
       const impressionsChange = pctChange(
         l1 ? (l1.totalImpressions || 0) : null,
