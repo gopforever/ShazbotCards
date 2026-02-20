@@ -51,6 +51,34 @@ const TitleOptimizer = (() => {
     return token !== null && token.length >= 10;
   }
 
+  /**
+   * Validate a GitHub token by calling the GitHub API.
+   * @param {string} token  GitHub personal access token
+   * @returns {Promise<{valid: boolean, user?: string, error?: string}>}
+   */
+  async function validateToken(token) {
+    try {
+      const response = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github+json',
+        },
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        console.log('Token validated for user:', user.login);
+        return { valid: true, user: user.login };
+      } else {
+        console.error('Token validation failed:', response.status);
+        return { valid: false, error: 'Invalid token' };
+      }
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return { valid: false, error: error.message };
+    }
+  }
+
   // ─── Title quality analysis ───────────────────────────────────────────────
 
   /**
@@ -334,6 +362,7 @@ Example format: [{"title":"2024 Prizm Patrick Mahomes Chiefs RC Auto #/99 PSA 10
     getToken,
     clearToken,
     hasValidToken,
+    validateToken,
     analyzeTitleQuality,
     generateOptimizedTitles,
     optimizeBulkListings,
