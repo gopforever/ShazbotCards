@@ -1,6 +1,6 @@
 /**
  * app.js — Main ShazbotCards Analytics application logic
- * Orchestrates CSV loading, analysis, and DOM rendering.
+ * Orchestrates CSV loading, analysis, storage, and DOM rendering.
  */
 
 (function () {
@@ -14,6 +14,10 @@
   let sortDir = 'desc';
   let searchQuery = '';
   let activeDetailRow = null;
+  let activeReportId = null;   // id of the report currently being viewed
+  let currentMode = 'current'; // 'current' | 'trends' | 'compare'
+  let compareR1Id = null;
+  let compareR2Id = null;
 
   // ─── Boot ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +25,11 @@
     setupDropzone();
     setupUploadButton();
     setupSearch();
+    setupHistoryPanel();
+    setupModeToggle();
+    setupCompare();
+    setupExportImport();
+    renderHistorySidebar();
     loadDefaultCSV();
   });
 
@@ -33,11 +42,11 @@
         if (!r.ok) throw new Error('Failed to fetch demo CSV');
         return r.text();
       })
-      .then(text => processCSV(text, 'Demo: Feb 19 2026 Traffic Report'))
-      .catch(err => setStatus('Could not load demo data. Upload your own CSV to begin.', 'warning'));
+      .then(text => processCSV(text, 'Demo: Feb 19 2026 Traffic Report', null, false))
+      .catch(() => setStatus('Could not load demo data. Upload your own CSV to begin.', 'warning'));
   }
 
-  function processCSV(text, label) {
+  function processCSV(text, label, filename, shouldSave) {
     try {
       const raw = CSVParser.parse(text);
       if (!raw.length) throw new Error('No listings found in CSV');
@@ -49,6 +58,16 @@
       console.error(err);
       return;
     }
+
+    // Save to history if this is a user upload
+    if (shouldSave !== false && filename && Storage.isAvailable()) {
+      const saved = Storage.saveReport(filename, allListings, null);
+      if (saved) {
+        activeReportId = saved.id;
+        renderHistorySidebar();
+      }
+    }
+
     try {
       renderAll();
     } catch (err) {
@@ -61,7 +80,6 @@
   function setupDropzone() {
     const dz = document.getElementById('dropzone');
     if (!dz) return;
-
     dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
     dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
     dz.addEventListener('drop', e => {
@@ -90,7 +108,7 @@
     }
     setStatus('Reading file…', 'info');
     const reader = new FileReader();
-    reader.onload = e => processCSV(e.target.result, file.name);
+    reader.onload = e => processCSV(e.target.result, file.name, file.name, true);
     reader.onerror = () => setStatus('Failed to read file', 'error');
     reader.readAsText(file);
   }
@@ -113,10 +131,439 @@
     renderFullTable();
   }
 
+  // ─── History Panel ─────────────────────────────────────────────────────────
+
+  function setupHistoryPanel() {
+    const toggleBtn = document.getElementById('btn-history-toggle');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const body = document.getElementById('history-body');
+        if (!body) return;
+        const collapsed = body.style.display === 'none';
+        body.style.display = collapsed ? '' : 'none';
+        toggleBtn.textContent = collapsed ? '▲ Collapse' : '▼ Expand';
+        toggleBtn.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+      });
+    }
+
+    const deleteAllBtn = document.getElementById('btn-delete-all');
+    if (deleteAllBtn) {
+      deleteAllBtn.addEventListener('click', () => {
+        if (confirm('Delete ALL saved reports? This cannot be undone.')) {
+          Storage.deleteAllReports();
+          activeReportId = null;
+          renderHistorySidebar();
+        }
+      });
+    }
+  }
+
+  function renderHistorySidebar() {
+    if (!Storage.isAvailable()) return;
+
+    const list = document.getElementById('history-list');
+    const empty = document.getElementById('history-empty');
+    const quota = document.getElementById('quota-indicator');
+    const deleteAllBtn = document.getElementById('btn-delete-all');
+    const exportBtn = document.getElementById('btn-export-json');
+    const modeBar = document.getElementById('mode-toggle-bar');
+
+    const reports = Storage.getReportList();
+    const q = Storage.getQuota();
+
+    if (quota) quota.textContent = `${q.used} of ${q.max} reports saved`;
+
+    // Toggle bulk action button visibility
+    if (deleteAllBtn) deleteAllBtn.style.display = reports.length ? '' : 'none';
+    if (exportBtn) exportBtn.style.display = reports.length ? '' : 'none';
+    if (modeBar) modeBar.style.display = reports.length >= 2 ? '' : 'none';
+
+    if (!list) return;
+
+    // Clear existing cards (keep empty message node)
+    Array.from(list.children).forEach(ch => {
+      if (ch.id !== 'history-empty') ch.remove();
+    });
+
+    if (reports.length === 0) {
+      if (empty) empty.style.display = '';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    reports.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'history-card' + (r.id === activeReportId ? ' active-report' : '');
+      card.dataset.reportId = r.id;
+
+      const uploadDate = new Date(r.uploadedAt).toLocaleString();
+      const periodText = r.reportPeriod
+        ? `${r.reportPeriod.start} → ${r.reportPeriod.end}`
+        : 'Date range unknown';
+
+      card.innerHTML = `
+        <div class="history-card-filename" title="${esc(r.filename)}">${esc(truncate(r.filename, 28))}</div>
+        <div class="history-card-meta">
+          <div>📅 Uploaded: ${esc(uploadDate)}</div>
+          <div>📋 ${r.listingCount} listings</div>
+          <div>📆 ${esc(periodText)}</div>
+        </div>
+        <div class="history-card-actions">
+          <button class="btn-sm btn-primary btn-set-active" data-id="${esc(r.id)}">View</button>
+          <button class="btn-sm btn-danger btn-delete-report" data-id="${esc(r.id)}">🗑</button>
+        </div>
+      `;
+
+      // View report
+      card.querySelector('.btn-set-active').addEventListener('click', e => {
+        e.stopPropagation();
+        loadReportById(r.id);
+      });
+
+      // Delete report
+      card.querySelector('.btn-delete-report').addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm(`Delete "${r.filename}"?`)) {
+          Storage.deleteReport(r.id);
+          if (activeReportId === r.id) activeReportId = null;
+          renderHistorySidebar();
+          refreshCompareSelects();
+        }
+      });
+
+      list.appendChild(card);
+    });
+
+    refreshCompareSelects();
+  }
+
+  function loadReportById(id) {
+    const report = Storage.getReport(id);
+    if (!report) { setStatus('Report not found.', 'error'); return; }
+    allListings = report.data || [];
+    filteredListings = [...allListings];
+    activeReportId = id;
+    setStatus(`Viewing: ${report.filename} (${allListings.length} listings)`, 'success');
+    renderHistorySidebar();
+    switchMode('current');
+    renderAll();
+  }
+
+  // ─── Mode Toggle ───────────────────────────────────────────────────────────
+
+  function setupModeToggle() {
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+    });
+  }
+
+  function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+
+    const currentView = document.getElementById('trends-view');
+    const compareView = document.getElementById('compare-view');
+    const mainSections = document.querySelectorAll(
+      '.kpi-section, .priority-section, .promo-section, .trending-section, .sport-section, .full-table-section'
+    );
+
+    mainSections.forEach(el => el.style.display = mode === 'current' ? '' : 'none');
+    if (currentView) currentView.style.display = mode === 'trends' ? '' : 'none';
+    if (compareView) compareView.style.display = mode === 'compare' ? '' : 'none';
+
+    if (mode === 'trends') renderTrendsView();
+  }
+
+  // ─── Trends View ───────────────────────────────────────────────────────────
+
+  function renderTrendsView() {
+    if (!Storage.isAvailable()) return;
+    const reports = Storage.getAllReports();
+    if (reports.length < 2) {
+      setStatus('Upload at least 2 reports to see trends.', 'info');
+      return;
+    }
+
+    const aggregateTrend = Trends.computeAggregateTrend(reports);
+    const timeline = Trends.buildListingTimeline(reports);
+    const topListings = Trends.getTopListingTimelines(timeline, 5);
+
+    Charts.renderImpressionsOverTime('impressionsOverTimeChart', aggregateTrend);
+    Charts.renderCTRTrend('ctrTrendChart', aggregateTrend);
+    Charts.renderTopListingsOverTime('topListingsChart', topListings, aggregateTrend);
+    Charts.renderHealthOverTime('healthOverTimeChart', aggregateTrend);
+
+    renderDeclinedListings(timeline);
+  }
+
+  function renderDeclinedListings(timeline) {
+    const tbody = document.getElementById('declined-tbody');
+    if (!tbody) return;
+
+    const declined = Trends.getDeclinedListings(timeline);
+    tbody.innerHTML = '';
+
+    if (!declined.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;color:var(--text-muted);text-align:center">No declined listings detected — great job! 🎉</td></tr>';
+      return;
+    }
+
+    declined.slice(0, 20).forEach(({ listing, change }) => {
+      const tr = document.createElement('tr');
+      const healthBadge = (badge) => `<span class="badge badge-health-${badge}">${badge}</span>`;
+      const statusBadge = change.isNewIssue
+        ? '<span class="badge badge-new-issue">🆕 New Issue</span>'
+        : '<span class="badge badge-declined">⬇ Declined</span>';
+
+      const impressionsPct = change.impressionsChange !== null
+        ? fmtChg(change.impressionsChange)
+        : '<span class="chg-na">N/A</span>';
+
+      tr.innerHTML = `
+        <td class="title-cell">${esc(truncate(listing.title, 50))}</td>
+        <td>${healthBadge(change.currSnap.healthBadge)}</td>
+        <td>${healthBadge(change.prevSnap.healthBadge)}</td>
+        <td>${fmtChgAbs(change.healthScoreChange)}</td>
+        <td>${impressionsPct}</td>
+        <td>${statusBadge}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ─── KPI Trend Indicators ──────────────────────────────────────────────────
+
+  function renderKPITrends() {
+    if (!Storage.isAvailable()) return;
+    const reports = Storage.getAllReports();
+    if (reports.length < 2) return;
+
+    const aggregateTrend = Trends.computeAggregateTrend(reports);
+    const comparison = Trends.computeKPIComparison(aggregateTrend);
+    if (!comparison) return;
+
+    setKPITrend('kpi-impressions', comparison.totalImpressions);
+    setKPITrend('kpi-ctr', comparison.avgCTR);
+    setKPITrend('kpi-sold', comparison.totalSold);
+    setKPITrend('kpi-total', comparison.listingCount);
+  }
+
+  function setKPITrend(kpiId, diffObj) {
+    const card = document.getElementById(kpiId)?.closest('.kpi-card');
+    if (!card) return;
+
+    // Remove existing trend el
+    const existing = card.querySelector('.kpi-trend');
+    if (existing) existing.remove();
+
+    if (!diffObj || diffObj.pctChange === null) return;
+
+    const pct = diffObj.pctChange;
+    const trendEl = document.createElement('div');
+    trendEl.className = 'kpi-trend';
+
+    if (Math.abs(pct) < 0.1) {
+      trendEl.className += ' kpi-trend-neutral';
+      trendEl.textContent = '→ No change';
+    } else if (pct > 0) {
+      trendEl.className += ' kpi-trend-up';
+      trendEl.textContent = `↑ +${pct.toFixed(1)}% vs prev`;
+    } else {
+      trendEl.className += ' kpi-trend-down';
+      trendEl.textContent = `↓ ${pct.toFixed(1)}% vs prev`;
+    }
+
+    card.appendChild(trendEl);
+  }
+
+  // ─── Compare Reports ───────────────────────────────────────────────────────
+
+  function setupCompare() {
+    const btn = document.getElementById('btn-run-compare');
+    if (btn) btn.addEventListener('click', runComparison);
+  }
+
+  function refreshCompareSelects() {
+    const sel1 = document.getElementById('compare-select-1');
+    const sel2 = document.getElementById('compare-select-2');
+    if (!sel1 || !sel2) return;
+
+    const reports = Storage.getReportList();
+    const makeOptions = (selectedId) => {
+      let html = '<option value="">-- Select a report --</option>';
+      reports.forEach(r => {
+        const date = new Date(r.uploadedAt).toLocaleDateString();
+        html += `<option value="${esc(r.id)}" ${r.id === selectedId ? 'selected' : ''}>${esc(truncate(r.filename, 30))} (${date})</option>`;
+      });
+      return html;
+    };
+
+    sel1.innerHTML = makeOptions(compareR1Id);
+    sel2.innerHTML = makeOptions(compareR2Id);
+  }
+
+  function runComparison() {
+    const sel1 = document.getElementById('compare-select-1');
+    const sel2 = document.getElementById('compare-select-2');
+    if (!sel1 || !sel2) return;
+
+    compareR1Id = sel1.value;
+    compareR2Id = sel2.value;
+
+    if (!compareR1Id || !compareR2Id) {
+      setStatus('Select two reports to compare.', 'warning');
+      return;
+    }
+    if (compareR1Id === compareR2Id) {
+      setStatus('Please select two different reports.', 'warning');
+      return;
+    }
+
+    const r1 = Storage.getReport(compareR1Id);
+    const r2 = Storage.getReport(compareR2Id);
+
+    // Update column headers
+    setText('compare-th-1', truncate(r1.filename, 20));
+    setText('compare-th-2', truncate(r2.filename, 20));
+
+    const rows = Trends.buildComparison(r1, r2);
+    renderCompareTable(rows);
+
+    const exportBtn = document.getElementById('btn-export-trend-csv');
+    if (exportBtn) exportBtn.style.display = '';
+    exportBtn && (exportBtn.onclick = () => exportTrendCSV(rows, r1, r2));
+  }
+
+  function renderCompareTable(rows) {
+    const tbody = document.getElementById('compare-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;color:var(--text-muted);text-align:center">No listings to compare.</td></tr>';
+      return;
+    }
+
+    rows.slice(0, 100).forEach(row => {
+      const tr = document.createElement('tr');
+
+      const statusLabel = row.isNew ? '<span class="badge badge-good">New</span>'
+        : row.isDelisted ? '<span class="badge badge-declined">Delisted</span>'
+        : '';
+
+      const r1 = row.r1;
+      const r2 = row.r2;
+
+      function cell(r, key, fmt) {
+        if (!r) return '<td class="chg-na">—</td>';
+        return `<td>${fmt ? fmt(r[key]) : r[key]}</td>`;
+      }
+
+      function changeCell(r1, r2, key) {
+        if (!r1 || !r2) return '<td class="chg-na">—</td>';
+        const a = r1[key], b = r2[key];
+        if (a === 0 && b === 0) return '<td class="chg-neutral">—</td>';
+        if (a === 0) return '<td class="chg-na">N/A</td>';
+        const pct = ((b - a) / Math.abs(a)) * 100;
+        return `<td>${fmtChg(pct)}</td>`;
+      }
+
+      const healthCell = (r) => {
+        if (!r) return '<td class="chg-na">—</td>';
+        return `<td><span class="badge badge-health-${r.healthBadge}">${r.healthScore}</span></td>`;
+      };
+
+      tr.innerHTML = `
+        <td class="title-cell">${esc(truncate(row.title, 45))}${statusLabel ? ' ' + statusLabel : ''}</td>
+        ${cell(r1, 'totalImpressions', v => v.toLocaleString())}
+        ${cell(r2, 'totalImpressions', v => v.toLocaleString())}
+        ${changeCell(r1, r2, 'totalImpressions')}
+        ${changeCell(r1, r2, 'ctr')}
+        ${changeCell(r1, r2, 'totalPageViews')}
+        ${changeCell(r1, r2, 'quantitySold')}
+        ${healthCell(r2 || r1)}
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ─── Export / Import ───────────────────────────────────────────────────────
+
+  function setupExportImport() {
+    const exportBtn = document.getElementById('btn-export-json');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        if (!Storage.isAvailable()) return;
+        const json = Storage.exportAll();
+        downloadText(json, 'shazbotcards-history.json', 'application/json');
+      });
+    }
+
+    const importInput = document.getElementById('importInput');
+    if (importInput) {
+      importInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const count = Storage.importAll(ev.target.result);
+          if (count < 0) {
+            setStatus('Import failed — invalid file format.', 'error');
+          } else {
+            setStatus(`Imported ${count} new report(s) successfully.`, 'success');
+            renderHistorySidebar();
+          }
+        };
+        reader.readAsText(file);
+        importInput.value = '';
+      });
+    }
+  }
+
+  function exportTrendCSV(rows, r1, r2) {
+    const headers = ['Item ID', 'Title', `${r1.filename} Impressions`, `${r2.filename} Impressions`, 'Impr % Change', 'CTR Change %', 'Views Change %', 'Sold Change %'];
+    const lines = [headers.join(',')];
+
+    rows.forEach(row => {
+      function pctChg(a, b) {
+        if (a === null || b === null) return 'N/A';
+        if (a === 0 && b === 0) return '0';
+        if (a === 0) return 'N/A';
+        return (((b - a) / Math.abs(a)) * 100).toFixed(1) + '%';
+      }
+      lines.push([
+        row.itemId,
+        `"${(row.title || '').replace(/"/g, '""')}"`,
+        row.r1 ? row.r1.totalImpressions : '',
+        row.r2 ? row.r2.totalImpressions : '',
+        pctChg(row.r1?.totalImpressions, row.r2?.totalImpressions),
+        pctChg(row.r1?.ctr, row.r2?.ctr),
+        pctChg(row.r1?.totalPageViews, row.r2?.totalPageViews),
+        pctChg(row.r1?.quantitySold, row.r2?.quantitySold),
+      ].join(','));
+    });
+
+    downloadText(lines.join('\n'), 'shazbotcards-trend-report.csv', 'text/csv');
+  }
+
+  function downloadText(content, filename, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }
+
   // ─── Render All ────────────────────────────────────────────────────────────
 
   function renderAll() {
     renderKPIs();
+    renderKPITrends();
     renderPriorityTable();
     renderPromotedSection();
     renderTrendingSection();
@@ -268,7 +715,6 @@
       `;
 
       tr.addEventListener('click', (e) => {
-        // Don't trigger expand if clicking the eBay link
         if (e.target.tagName === 'A') return;
         toggleDetailRow(tr, l);
       });
@@ -280,7 +726,6 @@
   }
 
   function toggleDetailRow(tr, listing) {
-    // Close any existing detail row
     if (activeDetailRow && activeDetailRow !== tr) {
       const existing = document.getElementById('detail-row-' + activeDetailRow.dataset.itemId);
       if (existing) existing.remove();
@@ -367,6 +812,20 @@
   function fmtPct(val) {
     if (val === null || val === undefined) return '-';
     return val.toFixed(1) + '%';
+  }
+
+  function fmtChg(pct) {
+    if (pct === null || pct === undefined) return '<span class="chg-na">N/A</span>';
+    const sign = pct >= 0 ? '+' : '';
+    const cls = Math.abs(pct) < 0.1 ? 'chg-neutral' : pct > 0 ? 'chg-up' : 'chg-down';
+    return `<span class="${cls}">${sign}${pct.toFixed(1)}%</span>`;
+  }
+
+  function fmtChgAbs(delta) {
+    if (delta === null || delta === undefined) return '<span class="chg-na">N/A</span>';
+    const sign = delta >= 0 ? '+' : '';
+    const cls = delta > 0 ? 'chg-up' : delta < 0 ? 'chg-down' : 'chg-neutral';
+    return `<span class="${cls}">${sign}${delta}</span>`;
   }
 
   function esc(str) {

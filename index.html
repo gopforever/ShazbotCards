@@ -42,6 +42,33 @@
 
 <main>
 
+  <section id="history-panel" class="history-panel dash-card" aria-label="Report History">
+    <div class="history-header">
+      <h2 class="section-title" style="margin:0"><span class="icon">📂</span> Report History</h2>
+      <div class="history-controls">
+        <span class="quota-indicator" id="quota-indicator">0 of 12 reports saved</span>
+        <button class="btn-sm btn-danger" id="btn-delete-all" title="Delete all saved reports" style="display:none">🗑 Delete All</button>
+        <button class="btn-sm btn-secondary" id="btn-export-json" title="Export all historical data as JSON" style="display:none">⬇ Export JSON</button>
+        <label class="btn-sm btn-secondary" title="Import previously exported JSON">⬆ Import JSON<input type="file" id="importInput" accept=".json" style="display:none" /></label>
+        <button class="btn-sm btn-secondary" id="btn-history-toggle" aria-expanded="true">▲ Collapse</button>
+      </div>
+    </div>
+    <div id="history-body">
+      <div id="history-list" class="history-list">
+      </div>
+    </div>
+  </section>
+
+  <div class="mode-toggle-bar" id="mode-toggle-bar" style="display:none">
+    <span class="mode-label">View Mode:</span>
+    <div class="mode-toggle" role="group" aria-label="Dashboard view mode">
+      <button class="mode-btn active" id="btn-mode-current" data-mode="current">📊 Current Report</button>
+      <button class="mode-btn" id="btn-mode-trends" data-mode="trends">📈 Trends Over Time</button>
+      <button class="mode-btn" id="btn-mode-compare" data-mode="compare">⚖ Compare Reports</button>
+    </div>
+  </div>
+
+
   <!-- ── KPI Cards ────────────────────────────────────────────────────── -->
   <section class="kpi-section" aria-label="Key Performance Indicators">
     <div class="kpi-grid">
@@ -240,12 +267,119 @@
     </div>
   </section>
 
+
+  <div id="trends-view" style="display:none">
+
+    <section class="trends-time-section" aria-label="Historical Trends">
+      <h2 class="section-title"><span class="icon">📈</span> Impressions Over Time</h2>
+      <div class="dash-card">
+        <div class="chart-container" style="height:280px">
+          <canvas id="impressionsOverTimeChart" aria-label="Impressions over time line chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="trends-time-section" aria-label="CTR Trend">
+      <h2 class="section-title"><span class="icon">🖱</span> Click-Through Rate Trend</h2>
+      <div class="dash-card">
+        <div class="chart-container" style="height:260px">
+          <canvas id="ctrTrendChart" aria-label="CTR trend line chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="trends-time-section" aria-label="Top Listings Over Time">
+      <h2 class="section-title"><span class="icon">🏆</span> Top 5 Listings — Impressions Over Time</h2>
+      <div class="dash-card">
+        <div class="chart-container" style="height:280px">
+          <canvas id="topListingsChart" aria-label="Top listings impressions over time chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="trends-time-section" aria-label="Health Score Distribution Over Time">
+      <h2 class="section-title"><span class="icon">❤️</span> Health Score Distribution Over Time</h2>
+      <div class="dash-card">
+        <div class="chart-container" style="height:260px">
+          <canvas id="healthOverTimeChart" aria-label="Health score distribution over time chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="trends-declined-section dash-card" aria-label="Declined Listings">
+      <h2 class="section-title"><span class="icon">⚠️</span> Listings That Have Declined Since Last Report</h2>
+      <div class="table-wrap">
+        <table id="declined-table" aria-label="Declined listings table">
+          <thead>
+            <tr>
+              <th>Listing</th>
+              <th>Current Health</th>
+              <th>Previous Health</th>
+              <th>Health Δ</th>
+              <th>Impressions Δ</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="declined-tbody">
+            <tr><td colspan="6" style="padding:20px;color:var(--text-muted);text-align:center">No declined listings detected.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="compare-view" style="display:none">
+
+    <section class="compare-section dash-card" aria-label="Report Comparison">
+      <h2 class="section-title"><span class="icon">⚖</span> Side-by-Side Report Comparison</h2>
+      <div class="compare-selectors">
+        <div class="compare-select-group">
+          <label for="compare-select-1">Report A:</label>
+          <select id="compare-select-1" class="compare-select">
+            <option value="">-- Select a report --</option>
+          </select>
+        </div>
+        <div class="compare-select-group">
+          <label for="compare-select-2">Report B:</label>
+          <select id="compare-select-2" class="compare-select">
+            <option value="">-- Select a report --</option>
+          </select>
+        </div>
+        <button class="btn-sm btn-primary" id="btn-run-compare">Compare</button>
+        <button class="btn-sm btn-secondary" id="btn-export-trend-csv" style="display:none">⬇ Export Trend CSV</button>
+      </div>
+      <div class="table-wrap" style="margin-top:16px">
+        <table id="compare-table" aria-label="Comparison table">
+          <thead>
+            <tr>
+              <th>Listing</th>
+              <th id="compare-th-1">Report A</th>
+              <th id="compare-th-2">Report B</th>
+              <th>Impr. Δ</th>
+              <th>CTR Δ</th>
+              <th>Views Δ</th>
+              <th>Sold Δ</th>
+              <th>Health</th>
+            </tr>
+          </thead>
+          <tbody id="compare-tbody">
+            <tr><td colspan="8" style="padding:20px;color:var(--text-muted);text-align:center">Select two reports above and click Compare.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
 </main>
 
 <!-- ── Scripts ───────────────────────────────────────────────────────────── -->
 <script src="js/csvParser.js"></script>
 <script src="js/analyzer.js"></script>
 <script src="js/charts.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/trends.js"></script>
 <script src="js/app.js"></script>
 
 </body>
