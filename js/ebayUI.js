@@ -59,6 +59,24 @@ const eBayUI = (() => {
 
     _bindConfigPanelEvents();
     _refreshConfigPanelState();
+
+    // Delegated listener for comparison widget push buttons (inserted dynamically into detail rows)
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.ebay-push-comparison-btn');
+      if (btn) {
+        const ebayItemID = btn.dataset.ebayId || null;
+        const oldTitle   = btn.dataset.oldTitle || null;
+        const newTitle   = btn.dataset.newTitle || null;
+        openPushModal(ebayItemID, oldTitle, newTitle || null);
+        return;
+      }
+      // Performance modal push button
+      const perfBtn = e.target.closest('.ebay-perf-push-btn');
+      if (perfBtn) {
+        const ebayItemID = perfBtn.dataset.ebayId || null;
+        openPushModal(ebayItemID, null, null);
+      }
+    });
   }
 
   function _buildConfigPanelHTML() {
@@ -435,7 +453,10 @@ const eBayUI = (() => {
 
   ${ebayItemID ? `
   <div class="ebay-compare-actions">
-    <button class="ebay-btn ebay-btn-primary" onclick="eBayUI.openPushModal('${_escapeHtml(ebayItemID)}', '${_escapeHtml(currentTitle).replace(/'/g, "\\'")}', ${hasOptimized ? `'${_escapeHtml(optimizedTitle).replace(/'/g, "\\'")}'` : 'null'})">
+    <button class="ebay-btn ebay-btn-primary ebay-push-comparison-btn"
+      data-ebay-id="${_escapeHtml(ebayItemID)}"
+      data-old-title="${_escapeHtml(currentTitle)}"
+      data-new-title="${hasOptimized ? _escapeHtml(optimizedTitle) : ''}">
       📤 Push ${hasOptimized ? 'Optimized Title' : 'Changes'} to eBay
     </button>
     <a href="https://www.ebay.com/itm/${_escapeHtml(ebayItemID)}" target="_blank" rel="noopener" class="ebay-btn ebay-btn-secondary">

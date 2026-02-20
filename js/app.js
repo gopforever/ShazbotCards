@@ -1340,8 +1340,8 @@
             <div class="perf-ebay-push-section">
               <p>Current Performance: <strong>${pred.saleProbability}%</strong></p>
               ${improvement > 0 ? `<p>After Pushing Optimized Title: <strong>${pred.predictedImpactWithChanges}% (+${improvement}%)</strong></p>` : ''}
-              <button class="ebay-btn ebay-btn-primary" style="margin-top:8px"
-                onclick="eBayUI.openPushModal('${ebayItemID}', null, null)">
+              <button class="ebay-btn ebay-btn-primary ebay-perf-push-btn" style="margin-top:8px"
+                data-ebay-id="${esc(ebayItemID)}">
                 📤 Push to eBay and Improve Performance
               </button>
             </div>`;
