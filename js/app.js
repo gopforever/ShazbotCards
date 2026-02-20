@@ -1194,7 +1194,7 @@
       }
 
       // Small delay between AI calls to avoid rate limits
-      if (i < listings.length - 1 && TitleOptimizer.hasValidToken()) {
+      if (i < listings.length - 1 && predictor._getToken()) {
         await new Promise(r => setTimeout(r, 500));
       }
     }
@@ -1214,20 +1214,20 @@
   }
 
   function updateWidgetCounts() {
-    let highRiskCount = 0, modCount = 0, lowRiskCount = 0;
+    // "High Risk" widget = listings with LOW probability; "Low Risk" widget = HIGH probability
+    let atRiskCount = 0, modCount = 0, performingCount = 0;
     predictionCache.forEach(pred => {
       const level = getPerfLevel(pred.saleProbability);
-      if (level === 'high') lowRiskCount++;
+      if (level === 'high') performingCount++;
       else if (level === 'moderate') modCount++;
-      else highRiskCount++;
+      else atRiskCount++;
     });
-    // Widget labels: "High Risk" = low probability listings, "Low Risk" = high probability listings
     const elHigh = document.getElementById('perf-count-high');
     const elMod  = document.getElementById('perf-count-mod');
     const elLow  = document.getElementById('perf-count-low');
-    if (elHigh) elHigh.textContent = lowRiskCount;
+    if (elHigh) elHigh.textContent = atRiskCount;
     if (elMod)  elMod.textContent  = modCount;
-    if (elLow)  elLow.textContent  = highRiskCount;
+    if (elLow)  elLow.textContent  = performingCount;
   }
 
   function refreshPerformanceBadges() {
