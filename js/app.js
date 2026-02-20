@@ -771,12 +771,17 @@
             <div class="detail-item detail-full"><label>Recommendation</label><span class="rec-text">${esc(listing.recommendation?.text || '-')}</span></div>
           </div>
           <div class="detail-actions">
-            <button class="btn-sm btn-primary" onclick="openTitleOptimizer('${esc(listing.itemId)}')">🤖 Optimize Title</button>
+            <button class="btn-sm btn-primary btn-optimize-title">🤖 Optimize Title</button>
           </div>
         </div>
       </td>
     `;
     tr.after(detailTr);
+
+    const optimizeBtn = detailTr.querySelector('.btn-optimize-title');
+    if (optimizeBtn) {
+      optimizeBtn.addEventListener('click', () => openTitleOptimizer(listing.itemId));
+    }
   }
 
   function sortListings(listings) {
@@ -1041,8 +1046,7 @@
 
   // ─── Title Optimizer ───────────────────────────────────────────────────────
 
-  // Expose openTitleOptimizer globally for inline onclick handlers
-  window.openTitleOptimizer = openTitleOptimizer;
+  // ─── Title Optimizer ───────────────────────────────────────────────────────
 
   function setupTitleOptimizer() {
     const hasToken = TitleOptimizer.hasValidToken();
@@ -1230,8 +1234,9 @@
         </div>
       `;
 
+      card.dataset.suggTitle = sugg.title;
       card.querySelector('.btn-copy-title').addEventListener('click', () => copyToClipboard(sugg.title));
-      card.querySelector('.btn-compare-title').addEventListener('click', () => showDiff(listing.title, sugg.title));
+      card.querySelector('.btn-compare-title').addEventListener('click', () => showDiff(listing.title, sugg.title, card));
 
       listEl.appendChild(card);
     });
@@ -1265,7 +1270,7 @@
     ta.remove();
   }
 
-  function showDiff(original, suggestion) {
+  function showDiff(original, suggestion, card) {
     const origWords = original.split(/\s+/);
     const suggWords = suggestion.split(/\s+/);
 
@@ -1276,25 +1281,16 @@
         : esc(word);
     }).join(' ');
 
-    const listEl = document.getElementById('suggestions-list');
-    if (!listEl) return;
+    const existing = card.querySelector('.diff-view');
+    if (existing) {
+      existing.remove();
+      return;
+    }
 
-    // Find the card containing this suggestion and show diff inline
-    const cards = listEl.querySelectorAll('.suggestion-card');
-    cards.forEach(card => {
-      const titleEl = card.querySelector('.suggestion-title');
-      if (titleEl && titleEl.textContent.trim() === suggestion) {
-        const existing = card.querySelector('.diff-view');
-        if (existing) {
-          existing.remove();
-        } else {
-          const diffDiv = document.createElement('div');
-          diffDiv.className = 'diff-view';
-          diffDiv.innerHTML = `<strong>Changes vs original:</strong><br>${diffHtml}`;
-          card.querySelector('.suggestion-actions').before(diffDiv);
-        }
-      }
-    });
+    const diffDiv = document.createElement('div');
+    diffDiv.className = 'diff-view';
+    diffDiv.innerHTML = `<strong>Changes vs original:</strong><br>${diffHtml}`;
+    card.querySelector('.suggestion-actions').before(diffDiv);
   }
 
   async function runBulkOptimization() {

@@ -223,7 +223,8 @@ Example format: [{"title":"2024 Prizm Patrick Mahomes Chiefs RC Auto #/99 PSA 10
           const fakeListing = { ...listing, title: t.title };
           const analysis = analyzeTitleQuality(fakeListing, allListings);
           const scoreDiff = analysis.total - currentAnalysis.total;
-          // Rough linear estimate: each quality point ≈ 0.2% CTR improvement
+          // Rough heuristic: each quality score point ≈ 0.2% CTR improvement.
+          // This is a placeholder coefficient; calibrate against real performance data.
           const estimatedCTRImprovement = Math.max(0, Math.round(scoreDiff * 0.2));
           return {
             title: t.title,
