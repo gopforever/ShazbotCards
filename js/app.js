@@ -13,11 +13,14 @@
   let sortColumn = 'totalImpressions';
   let sortDir = 'desc';
   let searchQuery = '';
+  let perfFilterLevel = 'all';  // 'all' | 'high' | 'moderate' | 'low'
   let activeDetailRow = null;
   let activeReportId = null;   // id of the report currently being viewed
   let currentMode = 'current'; // 'current' | 'trends' | 'compare'
   let compareR1Id = null;
   let compareR2Id = null;
+  // Map of itemId → prediction (populated asynchronously)
+  const predictionCache = new Map();
 
   // ─── Boot ──────────────────────────────────────────────────────────────────
 
@@ -30,6 +33,7 @@
     setupCompare();
     setupExportImport();
     setupTitleOptimizer();
+    setupPerformancePredictor();
     setupDebugMode();
     setupDebugConsoleButton();
     renderHistorySidebar();
@@ -138,9 +142,16 @@
   }
 
   function applyFilters() {
-    filteredListings = allListings.filter(l =>
-      !searchQuery || l.title.toLowerCase().includes(searchQuery) || l.itemId.includes(searchQuery)
-    );
+    filteredListings = allListings.filter(l => {
+      if (searchQuery && !l.title.toLowerCase().includes(searchQuery) && !l.itemId.includes(searchQuery)) return false;
+      if (perfFilterLevel !== 'all') {
+        const pred = predictionCache.get(l.itemId);
+        if (!pred) return true; // include unscored listings until prediction is available
+        const level = getPerfLevel(pred.saleProbability);
+        if (level !== perfFilterLevel) return false;
+      }
+      return true;
+    });
     renderFullTable();
   }
 
@@ -586,6 +597,11 @@
     renderSportSection();
     renderKeywordAnalyzer();
     renderFullTable();
+    // Clear predictor cache when new data loads, then refresh badges
+    if (window.PerformancePredictor) window.PerformancePredictor.clearCache();
+    predictionCache.clear();
+    renderPerformanceWidget();
+    refreshPerformanceBadges();
   }
 
   // ─── KPI Cards ─────────────────────────────────────────────────────────────
@@ -717,6 +733,10 @@
       tr.className = 'listing-row';
       tr.dataset.itemId = l.itemId;
 
+      // Get cached prediction for badge (if available)
+      const pred = predictionCache.get(l.itemId);
+      const perfBadgeHtml = buildPerfBadgeHtml(l, pred);
+
       tr.innerHTML = `
         <td class="title-cell">
           <a href="https://www.ebay.com/itm/${esc(l.itemId)}" target="_blank" rel="noopener" class="ebay-link" title="${esc(l.title)}">${esc(truncate(l.title, 50))}</a>
@@ -729,12 +749,23 @@
         <td>${fmtPct(l.top20Pct)}</td>
         <td><span class="health-score" style="color:${scoreColor}">${l.healthScore ?? '-'}</span></td>
         <td><span class="sport-badge sport-${(l.sport || 'other').toLowerCase()}">${esc(l.sport || '?')}</span></td>
+        <td class="perf-cell" data-item-id="${esc(l.itemId)}">${perfBadgeHtml}</td>
       `;
 
       tr.addEventListener('click', (e) => {
         if (e.target.tagName === 'A') return;
+        if (e.target.classList.contains('perf-info-btn') || e.target.closest('.perf-info-btn')) return;
         toggleDetailRow(tr, l);
       });
+
+      // Wire info button after inserting row
+      const infoBtn = tr.querySelector('.perf-info-btn');
+      if (infoBtn) {
+        infoBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openPerfModal(l);
+        });
+      }
 
       tbody.appendChild(tr);
     });
@@ -764,7 +795,7 @@
     detailTr.id = 'detail-row-' + listing.itemId;
     detailTr.className = 'detail-row';
     detailTr.innerHTML = `
-      <td colspan="9">
+      <td colspan="10">
         <div class="detail-panel">
           <div class="detail-grid">
             <div class="detail-item"><label>eBay ID</label><span><a href="https://www.ebay.com/itm/${esc(listing.itemId)}" target="_blank" rel="noopener">${esc(listing.itemId)}</a></span></div>
@@ -784,6 +815,7 @@
           </div>
           <div class="detail-actions">
             <button class="btn-sm btn-primary btn-optimize-title">🤖 Optimize Title</button>
+            <button class="btn-sm btn-secondary btn-view-performance">📊 Performance Prediction</button>
           </div>
         </div>
       </td>
@@ -794,12 +826,21 @@
     if (optimizeBtn) {
       optimizeBtn.addEventListener('click', () => openTitleOptimizer(listing.itemId));
     }
+    const perfBtn = detailTr.querySelector('.btn-view-performance');
+    if (perfBtn) {
+      perfBtn.addEventListener('click', () => openPerfModal(listing));
+    }
   }
 
   function sortListings(listings) {
     return [...listings].sort((a, b) => {
       let va = a[sortColumn];
       let vb = b[sortColumn];
+      // Special case: saleProbability comes from prediction cache
+      if (sortColumn === 'saleProbability') {
+        va = predictionCache.get(a.itemId)?.saleProbability ?? null;
+        vb = predictionCache.get(b.itemId)?.saleProbability ?? null;
+      }
       if (va === null || va === undefined) va = sortDir === 'asc' ? Infinity : -Infinity;
       if (vb === null || vb === undefined) vb = sortDir === 'asc' ? Infinity : -Infinity;
       if (typeof va === 'string') va = va.toLowerCase();
@@ -1056,7 +1097,245 @@
     el.style.display = 'block';
   }
 
-  // ─── Title Optimizer ───────────────────────────────────────────────────────
+  // ─── Performance Predictor ────────────────────────────────────────────────
+
+  function getPerfLevel(probability) {
+    if (probability >= 80) return 'high';
+    if (probability >= 50) return 'moderate';
+    return 'low';
+  }
+
+  function buildPerfBadgeHtml(listing, prediction) {
+    if (!prediction) {
+      return `<span class="perf-badge perf-badge-loading" title="Calculating…">…</span>`;
+    }
+    const level = getPerfLevel(prediction.saleProbability);
+    const label = prediction.saleProbability + '%';
+    const dot = level === 'high' ? '🟢' : level === 'moderate' ? '🟡' : '🔴';
+    return `
+      <span class="perf-badge perf-badge-${level}" title="Sale probability: ${label}">${dot} ${label}</span>
+      <button class="perf-info-btn" title="View prediction details" aria-label="View performance prediction">ℹ</button>
+    `;
+  }
+
+  function setupPerformancePredictor() {
+    if (!window.PerformancePredictor) return;
+
+    // Performance filter select
+    const perfFilter = document.getElementById('perf-filter-select');
+    if (perfFilter) {
+      perfFilter.addEventListener('change', () => {
+        perfFilterLevel = perfFilter.value;
+        applyFilters();
+      });
+    }
+
+    // Widget risk-card click filters
+    const riskCardMap = {
+      'perf-risk-high': 'low',      // "High Risk" card → listings with LOW probability
+      'perf-risk-mod':  'moderate',
+      'perf-risk-low':  'high',     // "Low Risk" card  → listings with HIGH probability
+    };
+    Object.entries(riskCardMap).forEach(([id, filterVal]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('click', () => {
+        perfFilterLevel = filterVal;
+        const sel = document.getElementById('perf-filter-select');
+        if (sel) sel.value = filterVal;
+        applyFilters();
+        const tableSection = document.querySelector('.full-table-section');
+        if (tableSection) tableSection.scrollIntoView({ behavior: 'smooth' });
+      });
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') el.click(); });
+    });
+
+    // Widget refresh button
+    const refreshBtn = document.getElementById('perf-widget-refresh');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        if (window.PerformancePredictor) window.PerformancePredictor.clearCache();
+        predictionCache.clear();
+        renderPerformanceWidget();
+        refreshPerformanceBadges();
+      });
+    }
+
+    // Prediction modal close
+    const closeBtn = document.getElementById('perf-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', closePerfModal);
+    const modal = document.getElementById('perf-modal');
+    if (modal) modal.addEventListener('click', e => { if (e.target === modal) closePerfModal(); });
+  }
+
+  function renderPerformanceWidget() {
+    if (!window.PerformancePredictor || !allListings.length) return;
+    const widget = document.getElementById('perf-widget');
+    if (widget) widget.style.display = '';
+    runPredictionsInBackground(allListings);
+  }
+
+  async function runPredictionsInBackground(listings) {
+    if (!window.PerformancePredictor) return;
+    const predictor = window.PerformancePredictor;
+
+    for (let i = 0; i < listings.length; i++) {
+      const listing = listings[i];
+      if (predictionCache.has(listing.itemId)) continue;
+
+      try {
+        const catStats = predictor.calculateCategoryStats(listings, listing.sport);
+        const prediction = await predictor.predictPerformance(listing, catStats);
+        predictionCache.set(listing.itemId, prediction);
+        updatePerfBadgeInRow(listing.itemId, listing, prediction);
+        updateWidgetCounts();
+      } catch (err) {
+        console.warn('Prediction failed for', listing.itemId, err.message);
+      }
+
+      // Small delay between AI calls to avoid rate limits
+      if (i < listings.length - 1 && TitleOptimizer.hasValidToken()) {
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+  }
+
+  function updatePerfBadgeInRow(itemId, listing, prediction) {
+    const cell = document.querySelector(`.perf-cell[data-item-id="${CSS.escape(itemId)}"]`);
+    if (!cell) return;
+    cell.innerHTML = buildPerfBadgeHtml(listing, prediction);
+    const infoBtn = cell.querySelector('.perf-info-btn');
+    if (infoBtn) {
+      infoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPerfModal(listing);
+      });
+    }
+  }
+
+  function updateWidgetCounts() {
+    let highRiskCount = 0, modCount = 0, lowRiskCount = 0;
+    predictionCache.forEach(pred => {
+      const level = getPerfLevel(pred.saleProbability);
+      if (level === 'high') lowRiskCount++;
+      else if (level === 'moderate') modCount++;
+      else highRiskCount++;
+    });
+    // Widget labels: "High Risk" = low probability listings, "Low Risk" = high probability listings
+    const elHigh = document.getElementById('perf-count-high');
+    const elMod  = document.getElementById('perf-count-mod');
+    const elLow  = document.getElementById('perf-count-low');
+    if (elHigh) elHigh.textContent = lowRiskCount;
+    if (elMod)  elMod.textContent  = modCount;
+    if (elLow)  elLow.textContent  = highRiskCount;
+  }
+
+  function refreshPerformanceBadges() {
+    document.querySelectorAll('.perf-cell[data-item-id]').forEach(cell => {
+      const itemId = cell.dataset.itemId;
+      const listing = allListings.find(l => l.itemId === itemId);
+      if (!listing) return;
+      const pred = predictionCache.get(itemId);
+      cell.innerHTML = buildPerfBadgeHtml(listing, pred);
+      const infoBtn = cell.querySelector('.perf-info-btn');
+      if (infoBtn) {
+        infoBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openPerfModal(listing);
+        });
+      }
+    });
+  }
+
+  async function openPerfModal(listing) {
+    const modal = document.getElementById('perf-modal');
+    const body  = document.getElementById('perf-modal-body');
+    if (!modal || !body) return;
+
+    body.innerHTML = `
+      <div class="perf-modal-loading">
+        <div class="perf-modal-spinner"></div>
+        <p>Analysing listing performance…</p>
+      </div>
+    `;
+    modal.classList.add('visible');
+
+    try {
+      const predictor = window.PerformancePredictor;
+      const catStats = predictor.calculateCategoryStats(allListings, listing.sport);
+      const pred = await predictor.predictPerformance(listing, catStats);
+      predictionCache.set(listing.itemId, pred);
+      updatePerfBadgeInRow(listing.itemId, listing, pred);
+      updateWidgetCounts();
+      renderPerfModalBody(body, listing, pred);
+    } catch (err) {
+      body.innerHTML = `<div style="padding:2rem;text-align:center;color:#f44336"><h3>❌ Prediction failed</h3><p style="margin-top:1rem;color:#ccc">${esc(err.message)}</p></div>`;
+    }
+  }
+
+  function closePerfModal() {
+    const modal = document.getElementById('perf-modal');
+    if (modal) modal.classList.remove('visible');
+  }
+
+  function renderPerfModalBody(body, listing, pred) {
+    const level = getPerfLevel(pred.saleProbability);
+    const levelClass = 'prob-' + level;
+    const dot = level === 'high' ? '🟢' : level === 'moderate' ? '🟡' : '🔴';
+    const riskLabel = { high: 'Low Risk', moderate: 'Moderate Risk', low: 'High Risk' }[level] || '';
+
+    const factorsHtml = pred.factors.map(f => {
+      const icon = f.status === 'good' ? '✅' : f.status === 'warning' ? '⚠️' : '❌';
+      const scoreVal = typeof f.score === 'number' ? f.score + '/100' : '';
+      return `
+        <div class="perf-factor factor-${esc(f.status)}">
+          <span class="perf-factor-icon">${icon}</span>
+          <div class="perf-factor-body">
+            <div class="perf-factor-name">${esc(f.name)}</div>
+            <div class="perf-factor-explanation">${esc(f.explanation || '')}</div>
+          </div>
+          ${scoreVal ? `<span class="perf-factor-score">${scoreVal}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    const recsHtml = pred.recommendations.length ? pred.recommendations.map((r, idx) => `
+      <div class="perf-rec">
+        <div class="perf-rec-priority">${r.priority || idx + 1}</div>
+        <div class="perf-rec-body">
+          <div class="perf-rec-action">${esc(r.action || '')}</div>
+          <div class="perf-rec-details">${esc(r.details || '')}</div>
+        </div>
+        ${r.expectedImpact ? `<div class="perf-rec-impact">${esc(r.expectedImpact)}</div>` : ''}
+      </div>
+    `).join('') : '<p style="color:var(--text-muted);font-size:0.85rem">No specific recommendations — listing is performing well!</p>';
+
+    const impactSection = pred.predictedImpactWithChanges > pred.saleProbability
+      ? `<div class="perf-impact-section">
+          <span class="perf-impact-label">📈 Predicted probability after improvements</span>
+          <span class="perf-impact-value">${pred.predictedImpactWithChanges}%</span>
+        </div>`
+      : '';
+
+    // TODO: future — "Apply Suggestions" button for automated improvement
+    // TODO: future — historical prediction accuracy tracking
+    // TODO: future — integration with Title Optimizer (show predicted impact of title changes)
+
+    body.innerHTML = `
+      <div class="perf-prob-section">
+        <div class="perf-prob-title">Predicted Sale Probability</div>
+        <div class="perf-prob-value ${levelClass}">${pred.saleProbability}%</div>
+        <div class="perf-progress-wrap">
+          <div class="perf-progress-bar ${levelClass}" style="width:${pred.saleProbability}%"></div>
+        </div>
+        <div class="perf-prob-subtitle">${dot} ${riskLabel} &nbsp;•&nbsp; Confidence: ${pred.confidence}%</div>
+      </div>
+      <div class="perf-modal-listing-title" title="${esc(listing.title)}">${esc(listing.title)}</div>
+      ${pred.factors.length ? `<div class="perf-factors-section"><h3>Analysis Factors</h3>${factorsHtml}</div>` : ''}
+      ${pred.recommendations.length ? `<div class="perf-recs-section" style="margin-top:16px"><h3>Recommendations</h3>${recsHtml}</div>` : ''}
+      ${impactSection}
+    `;
+  }
 
   // ─── Title Optimizer ───────────────────────────────────────────────────────
 

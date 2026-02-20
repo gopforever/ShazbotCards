@@ -1,0 +1,480 @@
+/* ============================================================
+   Performance Predictor — Styles
+   Matches existing ShazbotCards dark dashboard design
+   ============================================================ */
+
+/* ── Performance Badge ───────────────────────────────────── */
+
+.perf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.perf-badge-high {
+  background: rgba(76, 175, 80, 0.18);
+  color: #4caf50;
+  border: 1px solid rgba(76, 175, 80, 0.35);
+}
+
+.perf-badge-moderate {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.30);
+}
+
+.perf-badge-low {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+  border: 1px solid rgba(244, 67, 54, 0.30);
+}
+
+.perf-badge-loading {
+  background: rgba(136, 136, 160, 0.12);
+  color: var(--text-muted);
+  border: 1px solid rgba(136, 136, 160, 0.20);
+  animation: perf-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes perf-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* Info icon (ℹ) next to badge */
+.perf-info-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0 0 2px;
+  font-size: 0.78rem;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+
+.perf-info-btn:hover {
+  opacity: 1;
+}
+
+/* ── Dashboard Widget ────────────────────────────────────── */
+
+.perf-widget {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 0 24px 16px;
+}
+
+.perf-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.perf-widget-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perf-widget-refresh {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.perf-widget-refresh:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+}
+
+.perf-risk-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.perf-risk-card {
+  flex: 1;
+  min-width: 100px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.perf-risk-card:hover {
+  border-color: var(--accent);
+  background: rgba(79, 142, 247, 0.06);
+}
+
+.perf-risk-count {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.perf-risk-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.perf-risk-card.risk-high  .perf-risk-count { color: #f44336; }
+.perf-risk-card.risk-mod   .perf-risk-count { color: #ffc107; }
+.perf-risk-card.risk-low   .perf-risk-count { color: #4caf50; }
+
+.perf-widget-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Prediction Modal ────────────────────────────────────── */
+
+#perf-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 1000;
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+#perf-modal.visible {
+  display: flex;
+}
+
+.perf-modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 640px;
+  box-shadow: var(--shadow);
+  animation: perf-modal-in 0.18s ease;
+}
+
+@keyframes perf-modal-in {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.perf-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.perf-modal-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perf-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.perf-modal-close:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+}
+
+.perf-modal-body {
+  padding: 20px;
+}
+
+/* Probability score section */
+.perf-prob-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.perf-prob-title {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.perf-prob-value {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.perf-prob-value.prob-high     { color: #4caf50; }
+.perf-prob-value.prob-moderate { color: #ffc107; }
+.perf-prob-value.prob-low      { color: #f44336; }
+
+/* Progress bar */
+.perf-progress-wrap {
+  background: var(--bg-card2);
+  border-radius: 6px;
+  height: 10px;
+  overflow: hidden;
+  max-width: 360px;
+  margin: 0 auto 8px;
+}
+
+.perf-progress-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.perf-progress-bar.prob-high     { background: linear-gradient(90deg, #388e3c, #4caf50); }
+.perf-progress-bar.prob-moderate { background: linear-gradient(90deg, #f57c00, #ffc107); }
+.perf-progress-bar.prob-low      { background: linear-gradient(90deg, #c62828, #f44336); }
+
+.perf-prob-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.perf-modal-listing-title {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 20px;
+  font-style: italic;
+  padding: 0 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Factors */
+.perf-factors-section h3,
+.perf-recs-section h3 {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.perf-factor {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.perf-factor:last-child { border-bottom: none; }
+
+.perf-factor-icon {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.perf-factor-body { flex: 1; min-width: 0; }
+
+.perf-factor-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.perf-factor-explanation {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.perf-factor-score {
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.factor-good   .perf-factor-score { color: #4caf50; }
+.factor-warning .perf-factor-score { color: #ffc107; }
+.factor-poor   .perf-factor-score { color: #f44336; }
+
+/* Recommendations */
+.perf-rec {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.perf-rec:last-child { border-bottom: none; }
+
+.perf-rec-priority {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.perf-rec-body { flex: 1; min-width: 0; }
+
+.perf-rec-action {
+  font-size: 0.83rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.perf-rec-details {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.perf-rec-impact {
+  font-size: 0.75rem;
+  color: #4caf50;
+  font-weight: 600;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Impact after changes */
+.perf-impact-section {
+  margin-top: 16px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.perf-impact-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.perf-impact-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4caf50;
+}
+
+/* Modal loading state */
+.perf-modal-loading {
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.perf-modal-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: perf-spin 0.7s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes perf-spin {
+  to { transform: rotate(360deg); }
+}
+
+.perf-modal-loading p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+/* ── Filter bar additions ─────────────────────────────────── */
+
+.perf-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.perf-filter-group label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.perf-filter-select {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.perf-filter-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .perf-risk-grid { gap: 8px; }
+  .perf-risk-card { padding: 10px; }
+  .perf-risk-count { font-size: 1.3rem; }
+  .perf-modal-content { margin: 0; }
+  #perf-modal { padding: 20px 8px; }
+}
