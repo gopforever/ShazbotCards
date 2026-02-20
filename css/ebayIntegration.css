@@ -1,0 +1,551 @@
+/* ============================================================
+   ebayIntegration.css — eBay Integration Styles for ShazbotCards
+   Matches the existing dark dashboard design language.
+   ============================================================ */
+
+/* ── Config Panel ────────────────────────────────────────────── */
+
+.ebay-config-panel {
+  padding: 20px 24px;
+}
+
+.ebay-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ebay-status-indicator {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+}
+
+.ebay-status-indicator.ebay-connected  { color: #10b981; border-color: #10b981; }
+.ebay-status-indicator.ebay-expired    { color: #f59e0b; border-color: #f59e0b; }
+.ebay-status-indicator.ebay-unconfigured { color: var(--text-muted); }
+
+.ebay-account-label,
+.ebay-expiry-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ── Action row ──────────────────────────────────────────────── */
+
+.ebay-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* ── Sync stats ──────────────────────────────────────────────── */
+
+.ebay-sync-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.ebay-sync-stats strong {
+  color: var(--text);
+}
+
+/* ── Progress bar ────────────────────────────────────────────── */
+
+.ebay-sync-progress,
+.ebay-bulk-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ebay-progress-bar-wrap {
+  flex: 1;
+  background: var(--bg-card2);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.ebay-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #10b981);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.ebay-progress-text,
+#ebay-bulk-status {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  min-width: 140px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+
+.ebay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  text-decoration: none;
+}
+
+.ebay-btn:disabled,
+.ebay-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ebay-btn-primary {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+.ebay-btn-primary:hover:not(:disabled) { background: #2563eb; border-color: #2563eb; }
+
+.ebay-btn-secondary {
+  background: var(--bg-card2);
+  color: var(--text);
+  border-color: var(--border);
+}
+.ebay-btn-secondary:hover:not(:disabled) { background: var(--border); }
+
+.ebay-btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+.ebay-btn-danger:hover:not(:disabled) { background: #dc2626; }
+
+.ebay-btn-sm {
+  padding: 4px 8px;
+  font-size: 0.78rem;
+}
+
+.ebay-btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  text-decoration: none;
+}
+.ebay-btn-icon:hover { background: var(--bg-card2); }
+
+/* ── Sync badges (table) ─────────────────────────────────────── */
+
+.ebay-sync-badge {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.ebay-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ebay-item-link {
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-family: monospace;
+}
+.ebay-item-link:hover { text-decoration: underline; }
+
+/* ── Bulk push panel ─────────────────────────────────────────── */
+
+.ebay-bulk-actions {
+  padding: 14px;
+  background: var(--bg-card2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-top: 12px;
+}
+
+.ebay-bulk-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0 12px;
+  font-size: 0.88rem;
+}
+
+.ebay-bulk-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* ── Comparison widget ───────────────────────────────────────── */
+
+.ebay-comparison {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.ebay-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .ebay-compare-grid { grid-template-columns: 1fr; }
+}
+
+.ebay-compare-col {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.ebay-compare-col.ebay-compare-optimized {
+  border-color: #10b981;
+}
+
+.ebay-compare-col h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+
+.ebay-compare-col.ebay-compare-optimized h4 {
+  color: #10b981;
+}
+
+.ebay-compare-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ebay-compare-field label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ebay-compare-value {
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.ebay-compare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.ebay-no-id-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ── Settings modal ──────────────────────────────────────────── */
+
+.ebay-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.ebay-settings-content,
+.ebay-push-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+
+.ebay-settings-header,
+.ebay-push-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ebay-settings-header h3,
+.ebay-push-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.ebay-settings-close {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.15s;
+}
+.ebay-settings-close:hover { color: var(--text); }
+
+.ebay-settings-body,
+.ebay-push-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Settings form ───────────────────────────────────────────── */
+
+.ebay-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ebay-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ebay-form-group input[type="text"],
+.ebay-form-group input[type="password"] {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 0.88rem;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.ebay-form-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ebay-token-row {
+  display: flex;
+  gap: 6px;
+}
+
+.ebay-token-row input {
+  flex: 1;
+}
+
+.ebay-radio-group {
+  display: flex;
+  gap: 16px;
+  font-size: 0.88rem;
+}
+
+.ebay-radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.ebay-field-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.ebay-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.ebay-settings-status {
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: none;
+}
+
+/* ── Push modal ──────────────────────────────────────────────── */
+
+.ebay-push-item-info {
+  font-size: 0.88rem;
+  padding: 10px 12px;
+  background: var(--bg-card2);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.ebay-push-diff {
+  background: var(--bg-card2);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 0.83rem;
+  border: 1px solid var(--border);
+}
+
+.ebay-diff-line {
+  padding: 3px 0;
+  word-break: break-word;
+}
+
+.ebay-diff-removed {
+  color: #f87171;
+  text-decoration: line-through;
+}
+
+.ebay-diff-added {
+  color: #4ade80;
+}
+
+.ebay-push-no-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ebay-push-title-input {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 0.88rem;
+  width: 100%;
+}
+
+.ebay-push-title-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.ebay-char-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.ebay-push-warning {
+  font-size: 0.82rem;
+  color: #f59e0b;
+}
+
+.ebay-push-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.ebay-push-status {
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: none;
+}
+
+/* ── Shared status colours ───────────────────────────────────── */
+
+.ebay-status-success { background: #064e3b; color: #6ee7b7; }
+.ebay-status-error   { background: #450a0a; color: #fca5a5; }
+.ebay-status-info    { background: #1e3a5f; color: #93c5fd; }
+.ebay-status-warning { background: #451a03; color: #fcd34d; }
+
+/* ── Toast notification ──────────────────────────────────────── */
+
+.ebay-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg-card2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-size: 0.88rem;
+  box-shadow: var(--shadow);
+  z-index: 99999;
+  max-width: 320px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.ebay-toast-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ebay-toast-success { border-color: #10b981; color: #6ee7b7; }
+.ebay-toast-error   { border-color: #ef4444; color: #fca5a5; }
+.ebay-toast-info    { border-color: var(--accent); color: var(--accent); }
+.ebay-toast-warning { border-color: #f59e0b; color: #fcd34d; }
+
+/* ── Responsive tweaks ───────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .ebay-action-row  { flex-direction: column; }
+  .ebay-push-actions { flex-direction: column; }
+  .ebay-settings-actions { flex-direction: column; }
+}
+
+
+/* ── Performance modal eBay push section ─────────────────────── */
+
+.perf-ebay-push-section {
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--bg-card2);
+  border: 1px solid #3b82f6;
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+}
+
+.perf-ebay-push-section p {
+  margin-bottom: 4px;
+  color: var(--text-muted);
+}
+
+.perf-ebay-push-section strong {
+  color: var(--text);
+}
