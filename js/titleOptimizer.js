@@ -267,6 +267,13 @@ Example format: [{"title":"2024 Prizm Patrick Mahomes Chiefs RC Auto #/99 PSA 10
         if (err.message.includes('Rate limit') || err.message.includes('Invalid GitHub token')) {
           throw err;
         }
+        // Detect CSP/network block — no point retrying other models
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          throw new Error(
+            'Network request blocked. This may be a Content Security Policy issue. ' +
+            'Make sure the site is deployed to Netlify, or run locally with a local server.'
+          );
+        }
         // Continue to next model
       }
     }

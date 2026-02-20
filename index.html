@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <!-- Chart.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="js/devMode.js"></script>
 </head>
 <body>
 
@@ -33,11 +34,11 @@
       <strong>Drag &amp; drop your eBay Traffic Report CSV here</strong>
       <p>or click to browse — demo data loads automatically</p>
     </div>
-    <button class="btn-upload" onclick="document.getElementById('fileInput').click();event.stopPropagation();">
+    <button class="btn-upload" id="btn-upload-trigger">
       Upload New Report
     </button>
   </div>
-  <input type="file" id="fileInput" accept=".csv" style="display:none" aria-label="File upload input" />
+  <input type="file" id="fileInput" accept=".csv" aria-label="File upload input" />
 </div>
 
 <main>
@@ -47,9 +48,9 @@
       <h2 class="section-title" style="margin:0"><span class="icon">📂</span> Report History</h2>
       <div class="history-controls">
         <span class="quota-indicator" id="quota-indicator">0 of 12 reports saved</span>
-        <button class="btn-sm btn-danger" id="btn-delete-all" title="Delete all saved reports" style="display:none">🗑 Delete All</button>
-        <button class="btn-sm btn-secondary" id="btn-export-json" title="Export all historical data as JSON" style="display:none">⬇ Export JSON</button>
-        <label class="btn-sm btn-secondary" title="Import previously exported JSON">⬆ Import JSON<input type="file" id="importInput" accept=".json" style="display:none" /></label>
+        <button class="btn-sm btn-danger" id="btn-delete-all" title="Delete all saved reports">🗑 Delete All</button>
+        <button class="btn-sm btn-secondary" id="btn-export-json" title="Export all historical data as JSON">⬇ Export JSON</button>
+        <label class="btn-sm btn-secondary" title="Import previously exported JSON">⬆ Import JSON<input type="file" id="importInput" accept=".json" /></label>
         <button class="btn-sm btn-secondary" id="btn-history-toggle" aria-expanded="true">▲ Collapse</button>
       </div>
     </div>
@@ -59,7 +60,7 @@
     </div>
   </section>
 
-  <div class="mode-toggle-bar" id="mode-toggle-bar" style="display:none">
+  <div class="mode-toggle-bar" id="mode-toggle-bar">
     <span class="mode-label">View Mode:</span>
     <div class="mode-toggle" role="group" aria-label="Dashboard view mode">
       <button class="mode-btn active" id="btn-mode-current" data-mode="current">📊 Current Report</button>
@@ -319,7 +320,7 @@
     </div>
 
     <!-- Optimizer Controls (shown once token is saved) -->
-    <div id="ai-controls" class="ai-controls" style="display:none">
+    <div id="ai-controls" class="ai-controls">
       <div class="optimizer-stats">
         <div class="stat-card">
           <label>Titles Analyzed</label>
@@ -345,7 +346,7 @@
         <button id="btn-bulk-optimize" class="btn-primary">
           🚀 Optimize Red &amp; Yellow Listings
         </button>
-        <div id="bulk-progress" style="display:none">
+        <div id="bulk-progress">
           <progress id="bulk-progress-bar" max="100" value="0" aria-label="Bulk optimization progress"></progress>
           <span id="bulk-status"></span>
         </div>
@@ -389,7 +390,7 @@
   </section>
 
 
-  <div id="trends-view" style="display:none">
+  <div id="trends-view">
 
     <section class="trends-time-section" aria-label="Historical Trends">
       <h2 class="section-title"><span class="icon">📈</span> Impressions Over Time</h2>
@@ -450,7 +451,7 @@
 
   </div>
 
-  <div id="compare-view" style="display:none">
+  <div id="compare-view">
 
     <section class="compare-section dash-card" aria-label="Report Comparison">
       <h2 class="section-title"><span class="icon">⚖</span> Side-by-Side Report Comparison</h2>
@@ -468,7 +469,7 @@
           </select>
         </div>
         <button class="btn-sm btn-primary" id="btn-run-compare">Compare</button>
-        <button class="btn-sm btn-secondary" id="btn-export-trend-csv" style="display:none">⬇ Export Trend CSV</button>
+        <button class="btn-sm btn-secondary" id="btn-export-trend-csv">⬇ Export Trend CSV</button>
       </div>
       <div class="table-wrap" style="margin-top:16px">
         <table id="compare-table" aria-label="Comparison table">
@@ -494,7 +495,7 @@
   </div>
 
   <!-- ── Title Optimizer Modal ────────────────────────────────────────────── -->
-  <div id="title-optimizer-modal" class="modal" role="dialog" aria-modal="true" aria-label="AI Title Optimizer" style="display:none">
+  <div id="title-optimizer-modal" class="modal" role="dialog" aria-modal="true" aria-label="AI Title Optimizer">
     <div class="modal-content large">
       <div class="modal-header">
         <h2>🤖 AI Title Optimizer</h2>
@@ -553,7 +554,7 @@
             ✨ Generate Optimized Titles
           </button>
 
-          <div id="suggestions-loading" style="display:none">
+          <div id="suggestions-loading" class="hidden">
             <div class="spinner" aria-label="Loading"></div>
             <p>Analyzing and generating optimized titles…</p>
           </div>
@@ -574,10 +575,10 @@
         </div>
 
         <!-- Debug Panel (visible only when ?debug=1 is in the URL) -->
-        <div class="debug-section" id="debug-section" style="margin-top:2rem;padding:1rem;background:#1a1a1a;border-radius:8px;display:none;">
+        <div class="debug-section" id="debug-section">
           <h4 style="margin-bottom:0.5rem;">🐛 Debug Info</h4>
-          <button class="btn-sm btn-secondary" onclick="toggleDebugConsole()">Show Console Logs</button>
-          <pre id="debug-console" style="display:none;margin-top:0.5rem;padding:1rem;background:#000;color:#0f0;font-size:0.85rem;max-height:200px;overflow-y:auto;"></pre>
+          <button class="btn-sm btn-secondary" id="btn-toggle-debug-console">Show Console Logs</button>
+          <pre id="debug-console" class="hidden"></pre>
         </div>
       </div>
     </div>

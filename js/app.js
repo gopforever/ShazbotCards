@@ -31,6 +31,7 @@
     setupExportImport();
     setupTitleOptimizer();
     setupDebugMode();
+    setupDebugConsoleButton();
     renderHistorySidebar();
     loadDefaultCSV();
   });
@@ -91,6 +92,16 @@
       if (file) readFile(file);
     });
     dz.addEventListener('click', () => document.getElementById('fileInput').click());
+
+    // Replace inline onclick handler on upload button
+    const uploadTrigger = document.getElementById('btn-upload-trigger');
+    if (uploadTrigger) {
+      uploadTrigger.addEventListener('click', e => {
+        e.stopPropagation();
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.click();
+      });
+    }
   }
 
   function setupUploadButton() {
@@ -176,9 +187,9 @@
     if (quota) quota.textContent = `${q.used} of ${q.max} reports saved`;
 
     // Toggle bulk action button visibility
-    if (deleteAllBtn) deleteAllBtn.style.display = reports.length ? '' : 'none';
-    if (exportBtn) exportBtn.style.display = reports.length ? '' : 'none';
-    if (modeBar) modeBar.style.display = reports.length >= 2 ? '' : 'none';
+    if (deleteAllBtn) deleteAllBtn.style.display = reports.length ? 'inline-flex' : 'none';
+    if (exportBtn) exportBtn.style.display = reports.length ? 'inline-flex' : 'none';
+    if (modeBar) modeBar.style.display = reports.length >= 2 ? 'flex' : 'none';
 
     if (!list) return;
 
@@ -271,9 +282,9 @@
       '.kpi-section, .priority-section, .promo-section, .trending-section, .sport-section, .full-table-section'
     );
 
-    mainSections.forEach(el => el.style.display = mode === 'current' ? '' : 'none');
-    if (currentView) currentView.style.display = mode === 'trends' ? '' : 'none';
-    if (compareView) compareView.style.display = mode === 'compare' ? '' : 'none';
+    mainSections.forEach(el => el.style.display = mode === 'current' ? 'block' : 'none');
+    if (currentView) currentView.style.display = mode === 'trends' ? 'block' : 'none';
+    if (compareView) compareView.style.display = mode === 'compare' ? 'block' : 'none';
 
     if (mode === 'trends') renderTrendsView();
   }
@@ -435,7 +446,7 @@
 
     const exportBtn = document.getElementById('btn-export-trend-csv');
     if (exportBtn) {
-      exportBtn.style.display = '';
+      exportBtn.style.display = 'inline-flex';
       exportBtn.onclick = () => exportTrendCSV(rows, r1, r2);
     }
   }
@@ -1056,7 +1067,7 @@
 
     if (hasToken) {
       if (setupPanel) setupPanel.style.display = 'none';
-      if (controls) controls.style.display = '';
+      if (controls) controls.style.display = 'block';
     }
 
     const saveBtn = document.getElementById('btn-save-token');
@@ -1080,7 +1091,7 @@
             TitleOptimizer.saveToken(token);
             setStatus(`Token validated for user: ${validation.user}`, 'success');
             if (setupPanel) setupPanel.style.display = 'none';
-            if (controls) controls.style.display = '';
+            if (controls) controls.style.display = 'block';
             if (tokenInput) tokenInput.value = '';
           } else {
             throw new Error(validation.error || 'Token validation failed');
@@ -1098,7 +1109,7 @@
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         TitleOptimizer.clearToken();
-        if (setupPanel) setupPanel.style.display = '';
+        if (setupPanel) setupPanel.style.display = 'block';
         if (controls) controls.style.display = 'none';
         const tokenInput = document.getElementById('github-token-input');
         if (tokenInput) tokenInput.value = '';
@@ -1138,7 +1149,7 @@
     }
 
     const modal = document.getElementById('title-optimizer-modal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.classList.add('visible');
 
     // Populate current title info
     setText('current-title-text', listing.title);
@@ -1176,7 +1187,7 @@
 
   function closeTitleOptimizer() {
     const modal = document.getElementById('title-optimizer-modal');
-    if (modal) modal.style.display = 'none';
+    if (modal) modal.classList.remove('visible');
   }
 
   function renderTitleAnalysis(analysis) {
@@ -1198,13 +1209,13 @@
     const listEl = document.getElementById('suggestions-list');
     const generateBtn = document.getElementById('btn-generate-titles');
 
-    if (loadingEl) loadingEl.style.display = 'block';
+    if (loadingEl) loadingEl.classList.remove('hidden');
     if (listEl) listEl.innerHTML = '';
     if (generateBtn) generateBtn.disabled = true;
 
     try {
       const suggestions = await TitleOptimizer.generateOptimizedTitles(listing, allListings);
-      if (loadingEl) loadingEl.style.display = 'none';
+      if (loadingEl) loadingEl.classList.add('hidden');
       if (generateBtn) generateBtn.disabled = false;
       renderSuggestions(suggestions, listing);
 
@@ -1217,7 +1228,7 @@
         if (avgEl) avgEl.textContent = `+${avgImp}%`;
       }
     } catch (err) {
-      if (loadingEl) loadingEl.style.display = 'none';
+      if (loadingEl) loadingEl.classList.add('hidden');
       if (generateBtn) generateBtn.disabled = false;
       setStatus('Failed to generate suggestions: ' + err.message, 'error');
 
@@ -1339,10 +1350,13 @@
 
   function toggleDebugConsole() {
     const el = document.getElementById('debug-console');
-    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el) el.classList.toggle('hidden');
   }
-  // Expose for inline onclick in HTML
-  window.toggleDebugConsole = toggleDebugConsole;
+
+  function setupDebugConsoleButton() {
+    const btn = document.getElementById('btn-toggle-debug-console');
+    if (btn) btn.addEventListener('click', toggleDebugConsole);
+  }
 
   function renderSuggestions(suggestions, listing) {
     const listEl = document.getElementById('suggestions-list');
