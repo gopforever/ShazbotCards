@@ -30,6 +30,7 @@
     setupCompare();
     setupExportImport();
     setupTitleOptimizer();
+    setupDebugMode();
     renderHistorySidebar();
     loadDefaultCSV();
   });
@@ -1060,15 +1061,35 @@
 
     const saveBtn = document.getElementById('btn-save-token');
     if (saveBtn) {
-      saveBtn.addEventListener('click', () => {
+      saveBtn.addEventListener('click', async () => {
         const tokenInput = document.getElementById('github-token-input');
-        const token = tokenInput ? tokenInput.value : '';
-        if (TitleOptimizer.saveToken(token)) {
-          setStatus('GitHub token saved successfully', 'success');
-          if (setupPanel) setupPanel.style.display = 'none';
-          if (controls) controls.style.display = '';
-        } else {
-          setStatus('Invalid token — must be at least 10 characters', 'error');
+        const token = tokenInput ? tokenInput.value.trim() : '';
+
+        if (!token) {
+          setStatus('Please enter a GitHub token', 'error');
+          return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Validating…';
+
+        try {
+          const validation = await TitleOptimizer.validateToken(token);
+
+          if (validation.valid) {
+            TitleOptimizer.saveToken(token);
+            setStatus(`Token validated for user: ${validation.user}`, 'success');
+            if (setupPanel) setupPanel.style.display = 'none';
+            if (controls) controls.style.display = '';
+            if (tokenInput) tokenInput.value = '';
+          } else {
+            throw new Error(validation.error || 'Token validation failed');
+          }
+        } catch (error) {
+          setStatus('Token validation failed: ' + error.message, 'error');
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Token';
         }
       });
     }
@@ -1199,8 +1220,129 @@
       if (loadingEl) loadingEl.style.display = 'none';
       if (generateBtn) generateBtn.disabled = false;
       setStatus('Failed to generate suggestions: ' + err.message, 'error');
+
+      // Show user-friendly error in the suggestions panel
+      if (listEl) {
+        const errDiv = document.createElement('div');
+        errDiv.className = 'error-message';
+        errDiv.style.cssText = 'padding:2rem;text-align:center;color:#f44336;';
+
+        const heading = document.createElement('h3');
+        heading.textContent = '❌ Failed to Generate Titles';
+        errDiv.appendChild(heading);
+
+        const msg = document.createElement('p');
+        msg.style.cssText = 'margin:1rem 0;color:#ccc;';
+        msg.textContent = err.message;
+        errDiv.appendChild(msg);
+
+        if (err.message.toLowerCase().includes('token')) {
+          const hint = document.createElement('div');
+          hint.style.cssText = 'margin-top:1.5rem;padding:1rem;background:#2a2a2a;border-radius:8px;';
+
+          const hintTitle = document.createElement('p');
+          hintTitle.style.color = '#ffc107';
+          hintTitle.innerHTML = '💡 <strong>Need help?</strong>';
+          hint.appendChild(hintTitle);
+
+          const steps = [
+            ['Go to ', 'https://github.com/settings/tokens', 'GitHub Token Settings'],
+            'Click "Generate new token (classic)"',
+            'Give it a name like "ShazbotCards AI"',
+            ['Select scopes: ', null, null, 'read:user', ' and ', 'user:email'],
+            'Click "Generate token"',
+            'Copy the token and paste it in the AI Optimizer settings',
+          ];
+          const ol = document.createElement('ol');
+          ol.style.cssText = 'text-align:left;margin:1rem auto;max-width:500px;color:#ccc;';
+          steps.forEach(step => {
+            const li = document.createElement('li');
+            if (typeof step === 'string') {
+              li.textContent = step;
+            } else if (step[1]) {
+              li.textContent = step[0];
+              const a = document.createElement('a');
+              a.href = step[1];
+              a.target = '_blank';
+              a.rel = 'noopener';
+              a.style.color = '#4caf50';
+              a.textContent = step[2];
+              li.appendChild(a);
+            } else {
+              li.textContent = step[0];
+              const c1 = document.createElement('code');
+              c1.textContent = step[3];
+              li.appendChild(c1);
+              li.appendChild(document.createTextNode(step[4]));
+              const c2 = document.createElement('code');
+              c2.textContent = step[5];
+              li.appendChild(c2);
+            }
+            ol.appendChild(li);
+          });
+          hint.appendChild(ol);
+          errDiv.appendChild(hint);
+        }
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn-primary';
+        retryBtn.style.marginTop = '1rem';
+        retryBtn.textContent = '🔄 Try Again';
+        retryBtn.addEventListener('click', () => generateAndShowSuggestions(listing));
+        errDiv.appendChild(retryBtn);
+
+        listEl.innerHTML = '';
+        listEl.appendChild(errDiv);
+      }
     }
   }
+
+  function setupDebugMode() {
+    if (!window.location.search.includes('debug=1')) return;
+
+    const debugSection = document.getElementById('debug-section');
+    if (debugSection) debugSection.style.display = 'block';
+
+    const debugConsole = document.getElementById('debug-console');
+    if (!debugConsole) return;
+
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    const originalInfo = console.info;
+
+    function appendToDebug(prefix, args) {
+      debugConsole.textContent += (prefix ? prefix + ': ' : '') + args.join(' ') + '\n';
+      debugConsole.scrollTop = debugConsole.scrollHeight;
+    }
+
+    console.log = function (...args) {
+      originalLog.apply(console, args);
+      appendToDebug('', args);
+    };
+
+    console.error = function (...args) {
+      originalError.apply(console, args);
+      appendToDebug('ERROR', args);
+    };
+
+    console.warn = function (...args) {
+      originalWarn.apply(console, args);
+      appendToDebug('WARN', args);
+    };
+
+    console.info = function (...args) {
+      originalInfo.apply(console, args);
+      appendToDebug('INFO', args);
+    };
+  }
+
+  function toggleDebugConsole() {
+    const el = document.getElementById('debug-console');
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+  // Expose for inline onclick in HTML
+  window.toggleDebugConsole = toggleDebugConsole;
 
   function renderSuggestions(suggestions, listing) {
     const listEl = document.getElementById('suggestions-list');
