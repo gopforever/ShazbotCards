@@ -788,6 +788,7 @@ section { margin-bottom: 28px; }
   text-align: center;
   background: var(--bg-card, #1e1e1e);
   border-radius: 8px;
+  display: block; /* Show by default when no token saved */
 }
 
 .ai-setup-panel p {
@@ -1200,6 +1201,11 @@ mark.diff-new {
 #title-optimizer-modal,
 #debug-section {
   display: none;
+}
+
+/* Show setup panel by default */
+#ai-setup-panel {
+  display: block !important; /* Force visible - token entry should show first */
 }
 
 /* Debug console styling */
