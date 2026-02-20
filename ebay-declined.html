@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Authorization Cancelled - ShazbotCards</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .container {
+      background: white;
+      padding: 3rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+      max-width: 400px;
+    }
+    .icon { color: #f59e0b; font-size: 3rem; }
+    h2   { color: #1f2937; margin: 1rem 0; }
+    p    { color: #6b7280; line-height: 1.6; }
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 1rem;
+      margin-right: 0.5rem;
+    }
+    .btn:hover { background: #5568d3; }
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+    .btn-secondary:hover { background: #d1d5db; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">⚠️</div>
+    <h2>Authorization Cancelled</h2>
+    <p>You cancelled the eBay authorization process. To use eBay integration features, you'll need to connect your account.</p>
+    <button class="btn" onclick="tryAgain()">Try Again</button>
+    <button class="btn btn-secondary" onclick="returnToApp()">Return to App</button>
+  </div>
+
+  <script>
+    function tryAgain() {
+      window.location.href = '/?connect=ebay';
+    }
+
+    function returnToApp() {
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>

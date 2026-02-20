@@ -333,6 +333,9 @@
     </div>
   </section>
 
+  <!-- ── eBay OAuth Integration Widget ───────────────────────────────────── -->
+  <div id="ebay-integration" class="dash-card ebay-config-panel" aria-label="eBay OAuth Integration"></div>
+
   <!-- ── AI Title Optimizer Section ──────────────────────────────────────── -->
   <section class="ai-optimizer-section dash-card" aria-label="AI Title Optimizer">
     <h2 class="section-title"><span class="icon">🤖</span> AI Title Optimizer</h2>
@@ -648,12 +651,34 @@
 <script src="js/charts.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/trends.js"></script>
+<script src="js/config.js"></script>
 <script src="js/ebayConfig.js"></script>
+<script src="js/ebayOAuth.js"></script>
 <script src="js/ebayAPI.js"></script>
 <script src="js/ebaySync.js"></script>
 <script src="js/ebaySettings.js"></script>
 <script src="js/ebayUI.js"></script>
 <script src="js/app.js"></script>
+
+<script>
+  // Initialize eBay OAuth
+  window.ebayOAuth = new eBayOAuth({
+    appID:    CONFIG.ebay.appID,
+    ruName:   CONFIG.ebay.ruName,
+    proxyURL: CONFIG.ebay.proxyURL,
+  });
+
+  // If user arrived via the "Try Again" link, start the connect flow
+  const _urlParams = new URLSearchParams(window.location.search);
+  if (_urlParams.get('connect') === 'ebay') {
+    connecteBay();
+  }
+
+  // Render the OAuth widget once the DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    eBayUI.rendereBayWidget();
+  });
+</script>
 
 </body>
 </html>

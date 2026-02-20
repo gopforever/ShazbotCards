@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eBay Authentication - ShazbotCards</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .container {
+      background: white;
+      padding: 3rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+      max-width: 400px;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .success { color: #10b981; font-size: 3rem; }
+    .error   { color: #ef4444; font-size: 3rem; }
+    h2 { color: #1f2937; margin: 1rem 0; }
+    p  { color: #6b7280; }
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+    .btn:hover { background: #5568d3; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading">
+      <div class="spinner"></div>
+      <h2>Connecting to eBay…</h2>
+      <p>Please wait while we complete the authorization.</p>
+    </div>
+
+    <div id="success" style="display:none;">
+      <div class="success">✓</div>
+      <h2>Successfully Connected!</h2>
+      <p>Your eBay account is now connected.</p>
+      <button class="btn" onclick="returnToApp()">Return to ShazbotCards</button>
+    </div>
+
+    <div id="error" style="display:none;">
+      <div class="error">✕</div>
+      <h2>Connection Failed</h2>
+      <p id="error-message">An error occurred during authorization.</p>
+      <button class="btn" onclick="returnToApp()">Return to ShazbotCards</button>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/ebayOAuth.js"></script>
+  <script>
+    async function handleCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const code  = params.get('code');
+      const state = params.get('state');
+      const error = params.get('error');
+
+      if (error) {
+        showError('Authorization declined: ' + error);
+        return;
+      }
+
+      if (!code) {
+        showError('No authorization code received');
+        return;
+      }
+
+      try {
+        const oauth = new eBayOAuth({
+          appID:    CONFIG.ebay.appID,
+          ruName:   CONFIG.ebay.ruName,
+          proxyURL: CONFIG.ebay.proxyURL,
+        });
+
+        await oauth.handleCallback(code, state);
+        showSuccess();
+        setTimeout(returnToApp, 2000);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    function showSuccess() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('success').style.display = 'block';
+    }
+
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error-message').textContent = message;
+    }
+
+    function returnToApp() {
+      window.location.href = '/';
+    }
+
+    handleCallback();
+  </script>
+</body>
+</html>
