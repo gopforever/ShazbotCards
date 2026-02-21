@@ -205,6 +205,12 @@ const eBayUI = (() => {
       if (text) text.textContent = `✅ Synced ${result.count} listings`;
 
       _lastSyncedItems = result.items;
+
+      // Notify app.js so it can feed synced items into allListings → renderAll()
+      window.dispatchEvent(new CustomEvent('ebaySyncComplete', {
+        detail: { items: result.items, count: result.count }
+      }));
+
       _refreshConfigPanelState();
       showToast(`✅ Synced ${result.count} listings from eBay`, 'success');
 
