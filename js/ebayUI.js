@@ -158,9 +158,12 @@ const eBayUI = (() => {
       expiryLabel.textContent = '';
     }
 
-    // Sync button
+    // Sync button — enabled when manually configured OR connected via OAuth
     const syncBtn = document.getElementById('ebay-sync-btn');
-    if (syncBtn) syncBtn.disabled = !configured;
+    if (syncBtn) {
+      const oauthConnected = !!localStorage.getItem('ebay-access-token');
+      syncBtn.disabled = !configured && !oauthConnected;
+    }
 
     // Stats
     document.getElementById('ebay-listing-count').textContent =
