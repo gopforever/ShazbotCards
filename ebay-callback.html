@@ -121,7 +121,11 @@
     }
 
     function returnToApp() {
-      window.location.href = '/';
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      // Use the first segment as the base path only if it isn't a file (no extension)
+      const firstSegment = pathSegments[0];
+      const basePath = (firstSegment && !firstSegment.includes('.')) ? `/${firstSegment}/` : '/';
+      window.location.href = basePath;
     }
 
     handleCallback();
