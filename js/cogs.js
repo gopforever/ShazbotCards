@@ -13,18 +13,18 @@ const COGS = (() => {
   const DEFAULTS = {
     ebayFeeRate: 0.1325,
     shipping: {
-      ese: { label: 'eBay Std Envelope', postage: 1.03, materialCost: 0.23, total: 1.26 },
-      ga:  { label: 'Ground Advantage',  postage: 5.08, materialCost: 0.20, total: 5.28 },
+      ese: { label: 'eBay Std Envelope', postage: 1.03 },
+      ga:  { label: 'Ground Advantage',  postage: 5.08 },
       threshold: 20.00, // listings > $20 auto-assign GA
     },
     materials: [
-      { id: 'topldr',  name: 'Ultra Pro 3x4 Top Loader',       packCount: 200, packPrice: 33.98, unitCost: 0.17, includePerSale: true  },
-      { id: 'sleeve',  name: 'Ultra Pro Penny Sleeves',         packCount: 500, packPrice:  8.58, unitCost: 0.02, includePerSale: true  },
-      { id: 'env',     name: 'Ding Defend Shipping Envelopes',  packCount: 110, packPrice: 24.97, unitCost: 0.23, includePerSale: false }, // included in ESE shipping cost
-      { id: 'bubble',  name: 'Bubble Mailers 4x7 Poly Padded', packCount:  50, packPrice:  9.88, unitCost: 0.20, includePerSale: false }, // included in GA shipping cost
-      { id: 'hobb',    name: 'Hobby Armor 3.5x4.5',            packCount:  50, packPrice:  8.56, unitCost: 0.17, includePerSale: false },
-      { id: 'teambag', name: 'Team Bags 3x4 (35pt) - DEDC',    packCount: 100, packPrice:  5.25, unitCost: 0.05, includePerSale: false },
-      { id: 'graded',  name: 'Graded Card Sleeves Resealable',  packCount: 300, packPrice:  7.99, unitCost: 0.03, includePerSale: false },
+      { id: 'sleeve',  name: 'Ultra Pro Penny Sleeves',         packCount: 500, packPrice:  8.58, unitCost: 0.02, includePerSale: true,  methods: ['ese','ga'] },
+      { id: 'topldr',  name: 'Ultra Pro 3x4 Top Loader',        packCount: 200, packPrice: 33.98, unitCost: 0.17, includePerSale: true,  methods: ['ese','ga'] },
+      { id: 'teambag', name: 'Team Bags 3x4 (35pt) - DEDC',     packCount: 100, packPrice:  5.25, unitCost: 0.05, includePerSale: true,  methods: ['ese','ga'] },
+      { id: 'env',     name: 'Ding Defend Shipping Envelopes',  packCount: 110, packPrice: 24.97, unitCost: 0.23, includePerSale: true,  methods: ['ese'] },       // ESE only
+      { id: 'bubble',  name: 'Bubble Mailers 4x7 Poly Padded',  packCount:  50, packPrice:  9.88, unitCost: 0.20, includePerSale: true,  methods: ['ga']  },       // GA only
+      { id: 'hobb',    name: 'Hobby Armor 3.5x4.5',             packCount:  50, packPrice:  8.56, unitCost: 0.17, includePerSale: false, methods: ['ese','ga'] },
+      { id: 'graded',  name: 'Graded Card Sleeves Resealable',  packCount: 300, packPrice:  7.99, unitCost: 0.03, includePerSale: false, methods: ['ese','ga'] },
     ],
   };
 
@@ -65,19 +65,28 @@ const COGS = (() => {
 
     const ebayFee = price * settings.ebayFeeRate;
 
-    // Sum up materials marked includePerSale
+    // Sum materials that are includePerSale AND apply to this shipping method
     const materialCost = settings.materials
-      .filter(m => m.includePerSale)
+      .filter(m => {
+        if (!m.includePerSale) return false;
+        if (m.methods && m.methods.length > 0) {
+          return m.methods.includes(method);
+        }
+        return true;
+      })
       .reduce((sum, m) => sum + (m.unitCost || 0), 0);
 
-    const cogs = ebayFee + materialCost + ship.total;
+    // Postage only (material already counted above)
+    const postage = ship.postage || 0;
+
+    const cogs = ebayFee + materialCost + postage;
     const netProfit = price - cogs;
     const margin = price > 0 ? (netProfit / price) * 100 : 0;
 
     return {
       shippingMethod: method,
       shippingLabel: ship.label,
-      shippingCost: ship.total,
+      shippingCost: postage,
       ebayFee: parseFloat(ebayFee.toFixed(4)),
       materialCost: parseFloat(materialCost.toFixed(4)),
       cogs: parseFloat(cogs.toFixed(4)),
