@@ -1867,8 +1867,8 @@
       const mapped = items.map(item => ({
         itemId:                    item.itemId   || '',
         title:                    item.title    || '',
-        totalImpressions:         item.views    || 0,
-        totalPageViews:           item.views    || 0,
+        totalImpressions:         0,
+        totalPageViews:           0,
         ctr:                      0,
         quantitySold:             item.quantitySold || 0,
         top20Pct:                 0,
@@ -1879,7 +1879,7 @@
         quantityAvailable:        item.quantity || null,
         totalImpressionsPrev:     0,
         totalPromotedImpressions: 0,
-        totalOrganicImpressions:  item.views || 0,
+        totalOrganicImpressions:  0,
         nonSearchOrganicChangePct: null,
         price:                    item.price    || 0,
         watchers:                 item.watchers || 0,
@@ -1888,10 +1888,32 @@
         _source:                  'ebay-sync',
       }));
 
+      // If we already have analytics data loaded, preserve it
+      const existingAnalyticsMap = {};
+      if (allListings.length > 0) {
+        allListings.forEach(l => {
+          if (l.totalImpressions > 0 || l.ctr > 0 || l.totalPageViews > 0 || l.quantitySold > 0 || l.top20Pct > 0) {
+            existingAnalyticsMap[l.itemId] = l;
+          }
+        });
+      }
+
+      const withAnalytics = mapped.map(l => {
+        const existing = existingAnalyticsMap[l.itemId];
+        if (!existing) return l;
+        return {
+          ...l,
+          totalImpressions: existing.totalImpressions || 0,
+          totalPageViews:   existing.totalPageViews   || 0,
+          ctr:              existing.ctr              || 0,
+          top20Pct:         existing.top20Pct         || 0,
+        };
+      });
+
       // Enrich with health scores using the existing Analyzer
       const enriched = (typeof Analyzer !== 'undefined' && Analyzer.enrichWithScores)
-        ? Analyzer.enrichWithScores(mapped)
-        : mapped;
+        ? Analyzer.enrichWithScores(withAnalytics)
+        : withAnalytics;
 
       allListings = enriched;
       filteredListings = [...allListings];
@@ -1940,19 +1962,60 @@
         const listings = eBayAnalytics.mapToListingShape(result.listings, fullSyncedItems);
 
         if (!listings.length) {
-          if (statusText) statusText.textContent = '⚠️ No listing data returned for this period.';
+          // Analytics returned empty — eBay data lag is common (24-72h delay)
+          // Don't replace allListings — just show a helpful message
+          if (statusText) statusText.textContent = '⚠️ No analytics data yet for this period (eBay has a 24-72h data lag). Your listings are loaded — check back tomorrow for impressions/CTR data.';
           loadBtn.disabled = false;
           return;
         }
 
-        // Feed into the app's main data pipeline
-        allListings = listings;
+        // Merge analytics data ON TOP of existing allListings (which has titles from sync)
+        // Analytics data wins for impressions/CTR/sales fields
+        // Sync data wins for title/price/quantity fields
+        const analyticsMap = {};
+        listings.forEach(l => { analyticsMap[l.itemId] = l; });
+
+        let merged;
+        const hasSyncedListings = allListings.length > 0 && allListings.some(l => l._source === 'ebay-sync');
+        if (hasSyncedListings) {
+          // We have synced listings — merge analytics data into them
+          merged = allListings.map(syncedListing => {
+            const analytics = analyticsMap[syncedListing.itemId];
+            if (!analytics) return syncedListing; // no analytics for this listing yet
+            return {
+              ...syncedListing,
+              // Override with real analytics data
+              totalImpressions:         analytics.totalImpressions || 0,
+              totalPageViews:           analytics.totalPageViews   || 0,
+              ctr:                      analytics.ctr              || 0,
+              quantitySold:             analytics.quantitySold     || 0,
+              top20Pct:                 analytics.top20Pct         || 0,
+            };
+          });
+          // Also add any analytics listings not in the synced set
+          const mergedIds = new Set(merged.map(m => m.itemId));
+          listings.forEach(l => {
+            if (!mergedIds.has(l.itemId)) {
+              merged.push(l);
+            }
+          });
+        } else {
+          // No synced listings — use analytics data as-is
+          merged = listings;
+        }
+
+        // Enrich with health scores
+        const enriched = (typeof Analyzer !== 'undefined' && Analyzer.enrichWithScores)
+          ? Analyzer.enrichWithScores(merged)
+          : merged;
+
+        allListings = enriched;
         filteredListings = [...allListings];
         renderAll();
 
         const periodLabels = { TODAY: 'Today', LAST_7_DAYS: 'Last 7 Days', LAST_30_DAYS: 'Last 30 Days', LAST_90_DAYS: 'Last 90 Days' };
-        if (statusText) statusText.textContent = `✅ Loaded ${listings.length} listings — ${periodLabels[selectedPeriod]}`;
-        setStatus(`Live data loaded: ${listings.length} listings (${periodLabels[selectedPeriod]})`, 'success');
+        if (statusText) statusText.textContent = `✅ Loaded ${enriched.length} listings — ${periodLabels[selectedPeriod]}`;
+        setStatus(`Live data loaded: ${enriched.length} listings (${periodLabels[selectedPeriod]})`, 'success');
 
       } catch (err) {
         if (statusText) statusText.textContent = `❌ ${err.message}`;
