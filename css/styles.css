@@ -76,6 +76,44 @@ a:hover { text-decoration: underline; }
   color: var(--text-muted);
 }
 
+/* ── Header Actions ──────────────────────────────────────── */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.header-sync-btn {
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
+.header-connection-status {
+  font-size: 0.8rem;
+  color: var(--green, #4caf50);
+  opacity: 0.85;
+}
+
+/* ── Live Analytics Header ───────────────────────────────── */
+.live-analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.live-analytics-header .section-title {
+  margin-bottom: 0;
+}
+
+.live-analytics-last-loaded {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* ── Status Bar ──────────────────────────────────────────── */
 .status-bar {
   padding: 8px 24px;

@@ -38,6 +38,8 @@
     setupDebugConsoleButton();
     setupLiveAnalytics();
     renderHistorySidebar();
+    applyConnectedModeUI();
+    setupHeaderActions();
     loadDefaultCSV();
     if (typeof eBayUI !== 'undefined') eBayUI.injectConfigPanel();
   });
@@ -743,6 +745,7 @@
         <td class="title-cell">
           <a href="https://www.ebay.com/itm/${esc(l.itemId)}" target="_blank" rel="noopener" class="ebay-link" title="${esc(l.title)}">${esc(truncate(l.title, 50))}</a>
         </td>
+        <td>$${((l.price || 0)).toFixed(2)}</td>
         <td>${(l.totalImpressions || 0).toLocaleString()}</td>
         <td>${fmtPct(l.ctr)}</td>
         <td>${l.totalPageViews || 0}</td>
@@ -802,7 +805,7 @@
     detailTr.id = 'detail-row-' + listing.itemId;
     detailTr.className = 'detail-row';
     detailTr.innerHTML = `
-      <td colspan="10">
+      <td colspan="11">
         <div class="detail-panel">
           <div class="detail-grid">
             <div class="detail-item"><label>eBay ID</label><span><a href="https://www.ebay.com/itm/${esc(listing.itemId)}" target="_blank" rel="noopener">${esc(listing.itemId)}</a></span></div>
@@ -1845,6 +1848,47 @@
     downloadText(csv, 'optimized-titles.csv', 'text/csv');
   }
 
+  // ─── Connected Mode UI ────────────────────────────────────────────────────
+
+  function applyConnectedModeUI() {
+    const isConnected = !!localStorage.getItem('ebay-access-token');
+    const uploadSection = document.getElementById('upload-section');
+    const historyPanel = document.getElementById('history-panel');
+    const modeToggleBar = document.getElementById('mode-toggle-bar');
+
+    if (isConnected) {
+      if (uploadSection) uploadSection.style.display = 'none';
+      if (historyPanel) historyPanel.style.display = 'none';
+      if (modeToggleBar) {
+        const trendsBtn = document.getElementById('btn-mode-trends');
+        const compareBtn = document.getElementById('btn-mode-compare');
+        if (trendsBtn) trendsBtn.style.display = 'none';
+        if (compareBtn) compareBtn.style.display = 'none';
+      }
+    }
+  }
+
+  function setupHeaderActions() {
+    const headerActions = document.getElementById('header-actions');
+    const headerSyncBtn = document.getElementById('header-sync-btn');
+    const headerStatus = document.getElementById('header-connection-status');
+    const isConnected = !!localStorage.getItem('ebay-access-token');
+
+    if (isConnected && headerActions) {
+      headerActions.style.display = 'flex';
+      const username = localStorage.getItem('ebay-username') || '';
+      if (headerStatus && username) headerStatus.textContent = `✅ ${username}`;
+
+      if (headerSyncBtn) {
+        headerSyncBtn.addEventListener('click', () => {
+          if (typeof eBayUI !== 'undefined' && eBayUI.startSyncDown) {
+            eBayUI.startSyncDown();
+          }
+        });
+      }
+    }
+  }
+
   // ─── Live eBay Analytics ───────────────────────────────────────────────────
 
   function setupLiveAnalytics() {
@@ -1860,6 +1904,7 @@
 
     // Listen for eBay sync completion — feed synced listings into allListings
     window.addEventListener('ebaySyncComplete', (e) => {
+      applyConnectedModeUI();
       const { items } = e.detail;
       if (!items || !items.length) return;
 
@@ -2016,6 +2061,11 @@
         const periodLabels = { TODAY: 'Today', LAST_7_DAYS: 'Last 7 Days', LAST_30_DAYS: 'Last 30 Days', LAST_90_DAYS: 'Last 90 Days' };
         if (statusText) statusText.textContent = `✅ Loaded ${enriched.length} listings — ${periodLabels[selectedPeriod]}`;
         setStatus(`Live data loaded: ${enriched.length} listings (${periodLabels[selectedPeriod]})`, 'success');
+        const lastLoadedEl = document.getElementById('live-analytics-last-loaded');
+        if (lastLoadedEl) {
+          const now = new Date();
+          lastLoadedEl.textContent = `Last loaded: ${now.toLocaleTimeString()}`;
+        }
 
       } catch (err) {
         if (statusText) statusText.textContent = `❌ ${err.message}`;
