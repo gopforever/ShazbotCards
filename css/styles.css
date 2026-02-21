@@ -65,10 +65,13 @@ a:hover { text-decoration: underline; }
 .brand-text h1 {
   font-size: 1.4rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff !important;
+}
+
+.site-header h1 {
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .brand-text p {
@@ -86,8 +89,9 @@ a:hover { text-decoration: underline; }
 
 .header-sync-btn {
   font-size: 0.85rem;
-  padding: 8px 16px;
+  padding: 8px 18px;
   white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI Emoji', 'Segoe UI', sans-serif;
 }
 
 .header-connection-status {
@@ -97,6 +101,53 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── Live Analytics Header ───────────────────────────────── */
+.live-analytics-section {
+  margin-bottom: 1.5rem;
+}
+
+.live-analytics-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.period-picker {
+  display: flex;
+  gap: 6px;
+}
+
+.period-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #333);
+  background: var(--bg-card, #1e1e2e);
+  color: var(--text, #e0e0e0);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.period-btn:hover {
+  background: var(--accent, #4a4a6a);
+}
+
+.period-btn.active {
+  background: var(--accent, #4f6ef7);
+  border-color: var(--accent, #4f6ef7);
+  color: #fff;
+  font-weight: 600;
+}
+
+.live-analytics-status {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+}
+
 .live-analytics-header {
   display: flex;
   align-items: center;
@@ -116,10 +167,12 @@ a:hover { text-decoration: underline; }
 
 /* ── Status Bar ──────────────────────────────────────────── */
 .status-bar {
-  padding: 8px 24px;
+  min-height: 0;
+  padding: 6px 20px;
   font-size: 0.85rem;
   display: none;
 }
+.status-bar:empty { display: none; }
 .status-info    { background: #1a2a4a; color: var(--accent); }
 .status-success { background: #1a3a1a; color: var(--green); }
 .status-warning { background: #3a2a00; color: var(--yellow); }
@@ -168,7 +221,7 @@ a:hover { text-decoration: underline; }
 .btn-upload:hover { background: #3a7de0; }
 
 /* ── Main Layout ─────────────────────────────────────────── */
-main { padding: 0 24px 40px; }
+main { padding: 1rem 24px 40px; }
 
 /* ── Section Titles ──────────────────────────────────────── */
 .section-title {
