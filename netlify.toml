@@ -8,7 +8,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://www.ebay.com https://models.inference.ai.azure.com https://api.github.com https://inference.ai.azure.com https://*.openai.azure.com https://shazbotcards-ebay-proxy.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://www.ebay.com https://api.ebay.com https://api.sandbox.ebay.com https://models.inference.ai.azure.com https://api.github.com https://inference.ai.azure.com https://*.openai.azure.com https://shazbotcards-ebay-proxy.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
 
 [[headers]]
   for = "/data/*"
