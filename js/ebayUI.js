@@ -616,6 +616,10 @@ const eBayUI = (() => {
     showBulkPanel,
     showToast,
     rendereBayWidget,
+    getLastSyncedItems: () => [..._lastSyncedItems],
+    reDecorateTable: () => {
+      if (_lastSyncedItems.length) _decorateListingTable(_lastSyncedItems);
+    },
   };
 })();
 
