@@ -1876,7 +1876,7 @@
         <div class="cogs-line">Sale Price: <strong>$5.00</strong></div>
         <div class="cogs-line cogs-minus">eBay Fee (${(settings.ebayFeeRate*100).toFixed(2)}%): −$${eseExample.ebayFee.toFixed(2)}</div>
         <div class="cogs-line cogs-minus">Materials: −$${eseExample.materialCost.toFixed(2)}</div>
-        <div class="cogs-line cogs-minus">Shipping (ESE): −$${eseExample.shippingCost.toFixed(2)}</div>
+        <div class="cogs-line cogs-minus">Postage (ESE): −$${eseExample.shippingCost.toFixed(2)}</div>
         <div class="cogs-line cogs-total ${eseExample.netProfit >= 0 ? 'cogs-profit' : 'cogs-loss'}">
           Net Profit: <strong>$${eseExample.netProfit.toFixed(2)}</strong> (${eseExample.margin.toFixed(1)}%)
         </div>
@@ -1891,7 +1891,7 @@
         <div class="cogs-line">Sale Price: <strong>$25.00</strong></div>
         <div class="cogs-line cogs-minus">eBay Fee (${(settings.ebayFeeRate*100).toFixed(2)}%): −$${gaExample.ebayFee.toFixed(2)}</div>
         <div class="cogs-line cogs-minus">Materials: −$${gaExample.materialCost.toFixed(2)}</div>
-        <div class="cogs-line cogs-minus">Shipping (GA): −$${gaExample.shippingCost.toFixed(2)}</div>
+        <div class="cogs-line cogs-minus">Postage (GA): −$${gaExample.shippingCost.toFixed(2)}</div>
         <div class="cogs-line cogs-total ${gaExample.netProfit >= 0 ? 'cogs-profit' : 'cogs-loss'}">
           Net Profit: <strong>$${gaExample.netProfit.toFixed(2)}</strong> (${gaExample.margin.toFixed(1)}%)
         </div>
