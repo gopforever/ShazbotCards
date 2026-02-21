@@ -68,15 +68,51 @@ const eBaySync = (() => {
    * @returns {object}
    */
   function mapEbayToLocal(ebayItem) {
-    const startPrice = ebayItem.StartPrice;
-    const price = typeof startPrice === 'object'
-      ? parseFloat(startPrice['#text'] || startPrice._ || '0')
-      : parseFloat(startPrice || '0');
+    /**
+     * Robustly extract a numeric price from an eBay price field.
+     * eBay XML→JSON parsers produce inconsistent shapes:
+     *   - string: "4.99"
+     *   - object with _: { _: "4.99", currencyID: "USD" }
+     *   - object with #text: { "#text": "4.99", currencyID: "USD" }
+     *   - object with value: { value: "4.99" }
+     *   - object with __value__: { __value__: "4.99" } (some xml2js configs)
+     * @param {*} field  The raw price field from the eBay response object
+     * @returns {number|null}  Parsed price, or null if not extractable
+     */
+    function extractPrice(field) {
+      if (!field) return null;
+      if (typeof field === 'number') return field;
+      if (typeof field === 'string') {
+        const n = parseFloat(field);
+        return isNaN(n) ? null : n;
+      }
+      if (typeof field === 'object') {
+        const raw = field._ || field['#text'] || field.value || field.__value__ || null;
+        if (raw !== null) {
+          const n = parseFloat(raw);
+          return isNaN(n) ? null : n;
+        }
+      }
+      return null;
+    }
+
+    // Try price fields in priority order:
+    // 1. SellingStatus.CurrentPrice (most reliable for active listings)
+    // 2. SellingStatus.ConvertedCurrentPrice
+    // 3. BuyItNowPrice (BIN listings)
+    // 4. StartPrice (fallback)
+    const sellingStatus = ebayItem.SellingStatus || {};
+    const price =
+      extractPrice(sellingStatus.CurrentPrice) ??
+      extractPrice(sellingStatus.ConvertedCurrentPrice) ??
+      extractPrice(ebayItem.BuyItNowPrice) ??
+      extractPrice(ebayItem.StartPrice) ??
+      0;
 
     return {
       itemId:      String(ebayItem.ItemID || ''),
       title:       String(ebayItem.Title || ''),
-      price:       isNaN(price) ? 0 : price,
+      price:       price,
       quantity:    parseInt(ebayItem.Quantity || '1', 10),
       quantitySold: parseInt(ebayItem.QuantitySold || '0', 10),
       watchers:    parseInt(ebayItem.WatchCount || '0', 10),
