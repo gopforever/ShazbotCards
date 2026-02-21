@@ -34,6 +34,7 @@ class eBayOAuth {
   initiateAuth() {
     const missingFields = [];
     if (!this.appID)    missingFields.push('App ID');
+    if (!this.ruName)   missingFields.push('RuName');
     if (!this.proxyURL) missingFields.push('Proxy URL');
     if (missingFields.length) {
       const msg = `eBay OAuth: missing required config (${missingFields.join(', ')}). Open Settings to configure.`;
@@ -42,9 +43,8 @@ class eBayOAuth {
     }
 
     const state = this.generateState();
-    const redirectURI = this.getRedirectURI();
     const endpoint = this.getAuthorizeEndpoint();
-    console.info('[eBayOAuth] Initiating auth', { environment: this.environment, endpoint, redirectURI });
+    console.info('[eBayOAuth] Initiating auth', { environment: this.environment, endpoint, ruName: this.ruName });
     const authURL = this.buildAuthURL(state);
     window.location.href = authURL;
   }
@@ -68,7 +68,7 @@ class eBayOAuth {
     const params = new URLSearchParams({
       client_id: this.appID,
       response_type: 'code',
-      redirect_uri: this.getRedirectURI(),
+      redirect_uri: this.ruName,
       scope: this.scopes.join(' '),
       state: state,
     });
@@ -107,7 +107,7 @@ class eBayOAuth {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         code: code,
-        redirect_uri: this.getRedirectURI(),
+        redirect_uri: this.ruName,
       }),
     });
 
@@ -243,11 +243,10 @@ class eBayOAuth {
    */
   validate() {
     const errors = [];
-    const redirectURI = this.getRedirectURI();
     const endpoint = this.getAuthorizeEndpoint();
 
-    if (!redirectURI.startsWith('https://')) {
-      errors.push(`redirect_uri must use HTTPS — got: "${redirectURI}"`);
+    if (!this.ruName) {
+      errors.push('ruName is not configured — redirect_uri must be the eBay RuName string');
     }
     if (!this.appID)    errors.push('appID (Client ID) is not configured');
     if (!this.proxyURL) errors.push('proxyURL is not configured');
