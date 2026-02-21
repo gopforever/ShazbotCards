@@ -25,32 +25,12 @@
   </div>
   <div class="header-actions" id="header-actions" style="display:none">
     <span class="header-connection-status" id="header-connection-status"></span>
-    <button class="btn-primary header-sync-btn" id="header-sync-btn" title="Sync listings from eBay">🔄 Sync from eBay</button>
+    <button class="btn-primary header-sync-btn" id="header-sync-btn" title="Sync listings from eBay">&#x21BB; Sync from eBay</button>
   </div>
 </header>
 
 <!-- ── Status Bar ───────────────────────────────────────────────────────── -->
 <div id="status-bar" class="status-bar" role="status" aria-live="polite"></div>
-
-<!-- ── Live eBay Analytics ─────────────────────────────────────────────── -->
-<section class="dash-card live-analytics-section" id="live-analytics-section" aria-label="Live eBay Analytics" style="display:none">
-  <div class="live-analytics-header">
-    <h2 class="section-title"><span class="icon">📡</span> Live eBay Analytics</h2>
-    <span class="live-analytics-last-loaded" id="live-analytics-last-loaded"></span>
-  </div>
-  <div class="live-analytics-controls">
-    <div class="period-picker" role="group" aria-label="Select time period">
-      <button class="period-btn" data-period="TODAY">Today</button>
-      <button class="period-btn active" data-period="LAST_7_DAYS">7 Days</button>
-      <button class="period-btn" data-period="LAST_30_DAYS">30 Days</button>
-      <button class="period-btn" data-period="LAST_90_DAYS">90 Days</button>
-    </div>
-    <button class="btn-primary" id="btn-load-live-data">📊 Load Live Data</button>
-  </div>
-  <div class="live-analytics-status" id="live-analytics-status" style="display:none">
-    <span id="live-analytics-status-text"></span>
-  </div>
-</section>
 
 <!-- ── Upload / Drop Zone ───────────────────────────────────────────────── -->
 <div class="upload-section" id="upload-section">
@@ -69,6 +49,27 @@
 
 <main>
 
+  <!-- ── Live eBay Analytics ─────────────────────────────────────────────── -->
+  <section class="dash-card live-analytics-section" id="live-analytics-section" aria-label="Live eBay Analytics" style="display:none">
+    <div class="live-analytics-header">
+      <h2 class="section-title"><span class="icon">📡</span> Live eBay Analytics</h2>
+      <span class="live-analytics-last-loaded" id="live-analytics-last-loaded"></span>
+    </div>
+    <div class="live-analytics-controls">
+      <div class="period-picker" role="group" aria-label="Select time period">
+        <button class="period-btn" data-period="TODAY">Today</button>
+        <button class="period-btn active" data-period="LAST_7_DAYS">7 Days</button>
+        <button class="period-btn" data-period="LAST_30_DAYS">30 Days</button>
+        <button class="period-btn" data-period="LAST_90_DAYS">90 Days</button>
+      </div>
+      <button class="btn-primary" id="btn-load-live-data">📊 Load Live Data</button>
+    </div>
+    <div class="live-analytics-status" id="live-analytics-status" style="display:none">
+      <span id="live-analytics-status-text"></span>
+    </div>
+  </section>
+
+  <!-- ── Report History (hidden when eBay connected) ──────────────────────── -->
   <section id="history-panel" class="history-panel dash-card" aria-label="Report History">
     <div class="history-header">
       <h2 class="section-title" style="margin:0"><span class="icon">📂</span> Report History</h2>
@@ -281,79 +282,6 @@
           <canvas id="sportDoughnutChart" aria-label="Sport impressions doughnut chart"></canvas>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- ── Keyword Analyzer ──────────────────────────────────────────────── -->
-  <section class="dash-card keyword-section" aria-label="Keyword Performance Analyzer">
-    <div class="card-header">
-      <h2 class="section-title"><span class="icon">🔑</span> Keyword Performance Analyzer</h2>
-      <p class="subtitle">Most effective keywords in your listing titles</p>
-    </div>
-
-    <div class="keyword-tabs">
-      <button class="tab-btn active" data-tab="top-keywords">Top Keywords</button>
-      <button class="tab-btn" data-tab="trending-keywords">Trending</button>
-      <button class="tab-btn" data-tab="keyword-opportunities">Opportunities</button>
-    </div>
-
-    <div id="top-keywords" class="tab-content active">
-      <div class="keyword-stats-grid">
-        <div class="kpi-card">
-          <div class="kpi-value" id="total-unique-keywords">-</div>
-          <div class="kpi-label">Unique Keywords</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-value" id="avg-keywords-per-listing">-</div>
-          <div class="kpi-label">Avg Keywords/Listing</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-value" id="top-keyword-name">-</div>
-          <div class="kpi-label">Top Keyword</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-value" id="top-keyword-impressions">-</div>
-          <div class="kpi-label">Top Keyword Impressions</div>
-        </div>
-      </div>
-
-      <div class="table-toolbar">
-        <input type="text" id="keyword-search" placeholder="🔍 Search keywords…" class="search-input" aria-label="Search keywords" />
-      </div>
-
-      <div class="table-wrap">
-        <table id="keywords-table" aria-label="Keyword performance table">
-          <thead>
-            <tr>
-              <th data-sort="keyword">Keyword</th>
-              <th data-sort="appearances">Appearances</th>
-              <th data-sort="totalImpressions">Total Impressions</th>
-              <th data-sort="avgImpressions">Avg Impressions</th>
-              <th data-sort="avgCTR">Avg CTR</th>
-              <th data-sort="totalSold">Total Sold</th>
-              <th data-sort="conversionRate">Conv. Rate</th>
-              <th data-sort="avgHealthScore">Avg Health</th>
-            </tr>
-          </thead>
-          <tbody id="keywords-table-body">
-            <tr><td colspan="8" style="padding:20px;color:var(--text-muted);text-align:center">Loading…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="trending-keywords" class="tab-content">
-      <h3 class="section-title" style="font-size:1rem">📈 Trending Up</h3>
-      <div id="kw-trending-up-list" class="keyword-trend-list"></div>
-
-      <h3 class="section-title" style="font-size:1rem;margin-top:1.5rem">📉 Trending Down</h3>
-      <div id="kw-trending-down-list" class="keyword-trend-list"></div>
-    </div>
-
-    <div id="keyword-opportunities" class="tab-content">
-      <h3 class="section-title" style="font-size:1rem">💡 Underused High-Performers</h3>
-      <p style="color:var(--text-muted);margin-bottom:1rem">Keywords with high CTR but appearing in few listings — consider adding to more listings</p>
-      <div id="opportunities-list" class="keyword-opportunity-list"></div>
     </div>
   </section>
 
