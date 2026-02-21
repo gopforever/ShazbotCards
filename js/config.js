@@ -1,13 +1,13 @@
 /**
  * config.js — Centralized configuration for ShazbotCards
- * Update PROXY_URL_PLACEHOLDER with the actual proxy URL after deployment.
+ * Proxy URL points to the deployed Vercel backend at shazbotcards-ebay-proxy.vercel.app.
  */
 
 const CONFIG = {
   ebay: {
     appID:    'ScottPie-cardsapp-PRD-b63bb60a4-b9840da3',
     ruName:   'Scott_Pierce-ScottPie-cardsa-dnvvch',
-    proxyURL: 'PROXY_URL_PLACEHOLDER', // Replace after proxy deployment
+    proxyURL: 'https://shazbotcards-ebay-proxy.vercel.app',
     scopes: [
       'https://api.ebay.com/oauth/api_scope',
       'https://api.ebay.com/oauth/api_scope/sell.inventory',

@@ -30,7 +30,7 @@ class eBayOAuth {
 
   /** Redirect the user to eBay's OAuth authorization page. */
   initiateAuth() {
-    if (this.proxyURL === 'PROXY_URL_PLACEHOLDER') {
+    if (!this.proxyURL) {
       throw new Error('eBay proxy URL is not configured. Update CONFIG.ebay.proxyURL with the actual proxy server URL.');
     }
     const state = this.generateState();
