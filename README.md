@@ -160,20 +160,25 @@ const CONFIG = {
 
 ### RuName / Redirect URI
 
-The **RuName** (Redirect URL Name) is created in the eBay Developer Portal under your app's **Auth Accepted URL** settings.
+eBay's OAuth flow requires `redirect_uri` to be the **RuName** (Redirect URL Name) string — **not** a full callback URL.  The RuName is created in the eBay Developer Portal and maps internally to your registered accepted/declined URLs.
 
-- The redirect URI that eBay will return users to is **auto-detected at runtime** by `js/ebayOAuth.js` based on the current hostname and path. You must register this exact URI in the eBay Developer Portal (see step below):
-  - **GitHub Pages**: `https://<username>.github.io/<repo>/ebay-callback.html`
-  - **Netlify**: `https://<your-site>.netlify.app/ebay-callback.html`
-- In the eBay Developer Portal, under **Your Application → Auth Accepted URLs**, add the exact redirect URI for your deployment.
-- The **RuName** must correspond to an accepted URL entry that matches the above URI.
+- `js/ebayOAuth.js` passes `this.ruName` (e.g. `Scott_Pierce-ScottPie-cardsa-dnvvch`) as the `redirect_uri` parameter in both the authorize URL and the token exchange request.
+- After the user grants consent, eBay redirects to the **Auth Accepted URL** you configured for that RuName in the Developer Portal (e.g. `https://projectebay.netlify.app/ebay-callback.html`).  You do **not** need to register the callback URL in `redirect_uri` directly.
+- To change the callback URL (e.g. when switching from Netlify to GitHub Pages), update the **Auth Accepted URL** field for the RuName entry in the [eBay Developer Portal](https://developer.ebay.com/my/keys) — no code change is required.
+
+#### Required eBay Developer Portal Settings
+
+1. Navigate to **My Account → Application → Auth Accepted URLs**
+2. Set the **Auth Accepted URL** to your callback page (e.g. `https://projectebay.netlify.app/ebay-callback.html`)
+3. Set the **Auth Declined URL** to your declined page (e.g. `https://projectebay.netlify.app/ebay-declined.html`)
+4. Copy the generated **RuName** and paste it into `CONFIG.ebay.ruName` in `js/config.js`
 
 ### Proxy URL
 
 The `proxyURL` points to a backend service that performs the OAuth token exchange using your **Client Secret** (which must never be exposed in client-side code). Deploy the companion proxy (e.g., on Vercel or Netlify Functions) and update `CONFIG.ebay.proxyURL`.
 
 The proxy must implement:
-- `POST /auth/token` — exchange authorization code for tokens (`redirect_uri` is sent in the request body)
+- `POST /auth/token` — exchange authorization code for tokens (`redirect_uri` is sent in the request body as the RuName)
 - `POST /auth/refresh` — refresh an expired access token
 
 ### Switching Between Production and Sandbox
@@ -190,10 +195,3 @@ environment: 'sandbox', // or 'production'
 You can also change it at runtime via the **⚙️ Settings** panel in the dashboard — select the environment radio button and save.
 
 > **Tip**: When using Sandbox, use Sandbox App IDs from the eBay Developer Portal (they are separate credentials from Production).
-
-### Required eBay Developer Portal Settings
-
-1. Navigate to **My Account → Application → Auth Accepted URLs**
-2. Add your exact redirect URI (e.g. `https://gopforever.github.io/ShazbotCards/ebay-callback.html`)
-3. Save and copy the generated **RuName** — paste it into `CONFIG.ebay.ruName`
-4. Ensure the same redirect URI is registered for both **Production** and **Sandbox** applications if you use both
