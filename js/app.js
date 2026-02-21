@@ -1858,6 +1858,53 @@
       liveSection.style.display = 'block';
     }
 
+    // Listen for eBay sync completion — feed synced listings into allListings
+    window.addEventListener('ebaySyncComplete', (e) => {
+      const { items } = e.detail;
+      if (!items || !items.length) return;
+
+      // Map synced eBay Trading API items to the ShazbotCards listing shape
+      const mapped = items.map(item => ({
+        itemId:                    item.itemId   || '',
+        title:                    item.title    || '',
+        totalImpressions:         item.views    || 0,
+        totalPageViews:           item.views    || 0,
+        ctr:                      0,
+        quantitySold:             item.quantitySold || 0,
+        top20Pct:                 0,
+        isPromoted:               false,
+        promotedStatus:           'Organic',
+        sport:                    Analyzer.detectSport(item.title || ''),
+        startDate:                null,
+        quantityAvailable:        item.quantity || null,
+        totalImpressionsPrev:     0,
+        totalPromotedImpressions: 0,
+        totalOrganicImpressions:  item.views || 0,
+        nonSearchOrganicChangePct: null,
+        price:                    item.price    || 0,
+        watchers:                 item.watchers || 0,
+        listingType:              item.listingType || '',
+        listingUrl:               item.listingUrl || `https://www.ebay.com/itm/${item.itemId}`,
+        _source:                  'ebay-sync',
+      }));
+
+      // Enrich with health scores using the existing Analyzer
+      const enriched = (typeof Analyzer !== 'undefined' && Analyzer.enrichWithScores)
+        ? Analyzer.enrichWithScores(mapped)
+        : mapped;
+
+      allListings = enriched;
+      filteredListings = [...allListings];
+
+      try {
+        renderAll();
+      } catch (err) {
+        console.error('renderAll after eBay sync error:', err);
+      }
+
+      setStatus(`Loaded ${enriched.length} live listings from eBay sync`, 'success');
+    });
+
     // Period picker
     let selectedPeriod = 'LAST_7_DAYS';
     liveSection.querySelectorAll('.period-btn').forEach(btn => {
