@@ -128,6 +128,9 @@ Composite score per listing based on:
 - Pure client-side static site — no data ever leaves your browser
 - CSV files are parsed entirely in JavaScript in your local browser session
 - `netlify.toml` enforces security headers (CSP, X-Frame-Options, etc.)
+- `https://shazbotcards-ebay-proxy.vercel.app` is allowlisted in `connect-src` because the eBay
+  OAuth token exchange is routed through this Vercel proxy to avoid CORS restrictions; without it
+  the browser blocks the fetch and the OAuth callback fails with "Failed to fetch"
 
 ---
 
