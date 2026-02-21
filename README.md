@@ -129,8 +129,11 @@ Composite score per listing based on:
 - CSV files are parsed entirely in JavaScript in your local browser session
 - `netlify.toml` enforces security headers (CSP, X-Frame-Options, etc.)
 - `https://shazbotcards-ebay-proxy.vercel.app` is allowlisted in `connect-src` because the eBay
-  OAuth token exchange is routed through this Vercel proxy to avoid CORS restrictions; without it
-  the browser blocks the fetch and the OAuth callback fails with "Failed to fetch"
+  OAuth token exchange **and all Trading API calls** are routed through this Vercel proxy.
+  The browser never contacts `https://api.ebay.com` directly — all Trading API requests
+  (including the "Sync from eBay" `GetMyeBaySelling` call) go to `POST /trading/sync` on the
+  proxy, which forwards them server-to-server using the OAuth Bearer token. This avoids both
+  CORS restrictions and CSP violations that would occur if the browser called the eBay API directly.
 
 ---
 

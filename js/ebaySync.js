@@ -121,15 +121,93 @@ const eBaySync = (() => {
   // ─── Sync down (eBay → local) ─────────────────────────────────────────────
 
   /**
+   * Fetch all active listings via the backend proxy using an OAuth access token.
+   * Calls POST /trading/sync on the proxy with Bearer auth; handles pagination.
+   *
+   * @param {string}   token       OAuth access token from localStorage
+   * @param {Function} [onProgress]  Called with ({ page, totalPages, count })
+   * @returns {Promise<{ items: object[], count: number }>}
+   */
+  async function _syncViaProxy(token, onProgress) {
+    const proxyURL = (typeof CONFIG !== 'undefined' && CONFIG.ebay && CONFIG.ebay.proxyURL)
+      ? CONFIG.ebay.proxyURL
+      : 'https://shazbotcards-ebay-proxy.vercel.app';
+
+    const items = [];
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await fetch(`${proxyURL}/trading/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ callName: 'GetMyeBaySelling', pageNumber: page }),
+      });
+
+      if (!response.ok) {
+        let msg = `Proxy error: ${response.status} ${response.statusText}`;
+        try {
+          const errBody = await response.json();
+          if (errBody.error) msg = errBody.error;
+        } catch (e) { /* ignore parse failure */ }
+        throw new Error(msg);
+      }
+
+      const result = await response.json();
+      const activeList = result.ActiveList || {};
+      const pagination = activeList.PaginationResult || {};
+
+      totalPages = parseInt(pagination.TotalNumberOfPages || '1', 10) || 1;
+      const itemArray = activeList.ItemArray;
+
+      if (itemArray) {
+        const rawItems = itemArray.Item;
+        if (Array.isArray(rawItems)) {
+          items.push(...rawItems);
+        } else if (rawItems) {
+          items.push(rawItems);
+        }
+      }
+
+      if (typeof onProgress === 'function') onProgress({ page, totalPages, count: items.length });
+      page++;
+
+      if (page <= totalPages) await new Promise(resolve => setTimeout(resolve, 1100));
+    } while (page <= totalPages);
+
+    const mapped = items.map(mapEbayToLocal);
+
+    const listingMap = loadListingMap();
+    mapped.forEach(m => { listingMap[m.itemId] = m.itemId; });
+    saveListingMap(listingMap);
+
+    const status = loadSyncStatus();
+    status.lastSyncTime = Date.now();
+    status.listingCount = mapped.length;
+    saveSyncStatus(status);
+
+    return { items: mapped, count: mapped.length };
+  }
+
+  /**
    * Fetch all active listings from eBay and return them as mapped local objects.
-   * Does NOT modify existing local listings — returns raw eBay data.
+   * Prefers the OAuth proxy path (POST /trading/sync) when an access token is
+   * present in localStorage; falls back to the legacy direct-API path otherwise.
    *
    * @param {Function} [onProgress]  Called with ({ page, totalPages, count })
    * @returns {Promise<{ items: object[], count: number }>}
    */
   async function syncDown(onProgress) {
+    const oauthToken = localStorage.getItem('ebay-access-token');
+    if (oauthToken) {
+      return _syncViaProxy(oauthToken, onProgress);
+    }
+
     if (!eBayConfig.isConfigured()) {
-      throw new Error('eBay is not configured. Please add your credentials in Settings.');
+      throw new Error('eBay is not configured. Please connect your eBay account or add your credentials in Settings.');
     }
 
     const api = eBayAPIFactory.get();
