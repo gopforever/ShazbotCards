@@ -5,6 +5,7 @@
 
 const CONFIG = {
   ebay: {
+    environment: 'production', // 'production' | 'sandbox'
     appID:    'ScottPie-cardsapp-PRD-b63bb60a4-b9840da3',
     ruName:   'Scott_Pierce-ScottPie-cardsa-dnvvch',
     proxyURL: 'https://shazbotcards-ebay-proxy.vercel.app',

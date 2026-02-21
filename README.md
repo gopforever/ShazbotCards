@@ -135,3 +135,65 @@ Composite score per listing based on:
 - **HTML5 + CSS3 + Vanilla JavaScript** — no frameworks, no build step
 - **[Chart.js 4](https://www.chartjs.org/)** — for data visualizations (loaded from CDN)
 - **Netlify** — static hosting with CDN and automatic HTTPS
+
+---
+
+## 🔑 eBay OAuth Integration
+
+### App Keys & Credentials
+
+1. Log in to the [eBay Developer Program](https://developer.ebay.com/my/keys)
+2. Create or select an application to get your **App ID (Client ID)**, **Dev ID**, and **Cert ID (Client Secret)**
+3. Open `js/config.js` and set:
+
+```js
+const CONFIG = {
+  ebay: {
+    environment: 'production', // 'production' or 'sandbox'
+    appID:    'YourApp-ID-HERE',
+    ruName:   'Your-RuName-HERE',
+    proxyURL: 'https://your-backend-proxy.example.com',
+    // ...
+  }
+};
+```
+
+### RuName / Redirect URI
+
+The **RuName** (Redirect URL Name) is created in the eBay Developer Portal under your app's **Auth Accepted URL** settings.
+
+- The redirect URI that eBay will return users to is **auto-detected at runtime** by `js/ebayOAuth.js` based on the current hostname and path. You must register this exact URI in the eBay Developer Portal (see step below):
+  - **GitHub Pages**: `https://<username>.github.io/<repo>/ebay-callback.html`
+  - **Netlify**: `https://<your-site>.netlify.app/ebay-callback.html`
+- In the eBay Developer Portal, under **Your Application → Auth Accepted URLs**, add the exact redirect URI for your deployment.
+- The **RuName** must correspond to an accepted URL entry that matches the above URI.
+
+### Proxy URL
+
+The `proxyURL` points to a backend service that performs the OAuth token exchange using your **Client Secret** (which must never be exposed in client-side code). Deploy the companion proxy (e.g., on Vercel or Netlify Functions) and update `CONFIG.ebay.proxyURL`.
+
+The proxy must implement:
+- `POST /auth/token` — exchange authorization code for tokens (`redirect_uri` is sent in the request body)
+- `POST /auth/refresh` — refresh an expired access token
+
+### Switching Between Production and Sandbox
+
+- **Production** (default): uses `https://auth2.ebay.com/oauth2/authorize`
+- **Sandbox**: uses `https://auth.sandbox.ebay.com/oauth2/authorize`
+
+To switch environments, set `environment` in `js/config.js`:
+
+```js
+environment: 'sandbox', // or 'production'
+```
+
+You can also change it at runtime via the **⚙️ Settings** panel in the dashboard — select the environment radio button and save.
+
+> **Tip**: When using Sandbox, use Sandbox App IDs from the eBay Developer Portal (they are separate credentials from Production).
+
+### Required eBay Developer Portal Settings
+
+1. Navigate to **My Account → Application → Auth Accepted URLs**
+2. Add your exact redirect URI (e.g. `https://gopforever.github.io/ShazbotCards/ebay-callback.html`)
+3. Save and copy the generated **RuName** — paste it into `CONFIG.ebay.ruName`
+4. Ensure the same redirect URI is registered for both **Production** and **Sandbox** applications if you use both

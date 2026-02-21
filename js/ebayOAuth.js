@@ -11,14 +11,16 @@
 class eBayOAuth {
   /**
    * @param {object} config
-   * @param {string} config.appID     eBay App ID (Client ID)
-   * @param {string} config.ruName    eBay RuName (redirect URL name)
-   * @param {string} config.proxyURL  Backend proxy server URL (handles token exchange)
+   * @param {string} config.appID        eBay App ID (Client ID)
+   * @param {string} config.ruName       eBay RuName (redirect URL name)
+   * @param {string} config.proxyURL     Backend proxy server URL (handles token exchange)
+   * @param {string} [config.environment] 'production' (default) or 'sandbox'
    */
   constructor(config) {
     this.appID = config.appID;
     this.ruName = config.ruName;
     this.proxyURL = config.proxyURL;
+    this.environment = config.environment === 'sandbox' ? 'sandbox' : 'production';
     this.scopes = [
       'https://api.ebay.com/oauth/api_scope',
       'https://api.ebay.com/oauth/api_scope/sell.inventory',
@@ -30,12 +32,31 @@ class eBayOAuth {
 
   /** Redirect the user to eBay's OAuth authorization page. */
   initiateAuth() {
-    if (!this.proxyURL) {
-      throw new Error('eBay proxy URL is not configured. Update CONFIG.ebay.proxyURL with the actual proxy server URL.');
+    const missingFields = [];
+    if (!this.appID)    missingFields.push('App ID');
+    if (!this.proxyURL) missingFields.push('Proxy URL');
+    if (missingFields.length) {
+      const msg = `eBay OAuth: missing required config (${missingFields.join(', ')}). Open Settings to configure.`;
+      console.error('[eBayOAuth]', msg);
+      throw new Error(msg);
     }
+
     const state = this.generateState();
+    const redirectURI = this.getRedirectURI();
+    const endpoint = this.getAuthorizeEndpoint();
+    console.info('[eBayOAuth] Initiating auth', { environment: this.environment, endpoint, redirectURI });
     const authURL = this.buildAuthURL(state);
     window.location.href = authURL;
+  }
+
+  /**
+   * Return the correct OAuth authorize endpoint for the configured environment.
+   * @returns {string}
+   */
+  getAuthorizeEndpoint() {
+    return this.environment === 'sandbox'
+      ? 'https://auth.sandbox.ebay.com/oauth2/authorize'
+      : 'https://auth2.ebay.com/oauth2/authorize';
   }
 
   /**
@@ -52,7 +73,7 @@ class eBayOAuth {
       state: state,
     });
 
-    return `https://auth.ebay.com/oauth2/authorize?${params}`;
+    return `${this.getAuthorizeEndpoint()}?${params}`;
   }
 
   /**
@@ -210,5 +231,40 @@ class eBayOAuth {
   /** Returns true if an access token is present (user is considered connected). */
   isConnected() {
     return !!localStorage.getItem('ebay-access-token');
+  }
+
+  // ─── Validation ───────────────────────────────────────────────────────────
+
+  /**
+   * Runtime validation — verifies redirect_uri uses HTTPS, required authorize URL
+   * params are present, and the endpoint matches the configured environment.
+   * Logs warnings to the console.
+   * @returns {string[]}  Array of error descriptions (empty = all OK)
+   */
+  validate() {
+    const errors = [];
+    const redirectURI = this.getRedirectURI();
+    const endpoint = this.getAuthorizeEndpoint();
+
+    if (!redirectURI.startsWith('https://')) {
+      errors.push(`redirect_uri must use HTTPS — got: "${redirectURI}"`);
+    }
+    if (!this.appID)    errors.push('appID (Client ID) is not configured');
+    if (!this.proxyURL) errors.push('proxyURL is not configured');
+
+    // Build a test URL and verify required query parameters
+    const testURL = this.buildAuthURL('__validation__');
+    const url = new URL(testURL);
+    for (const param of ['client_id', 'response_type', 'redirect_uri', 'scope', 'state']) {
+      if (!url.searchParams.get(param)) {
+        errors.push(`authorize URL is missing required param: ${param}`);
+      }
+    }
+    if (!testURL.startsWith(endpoint)) {
+      errors.push(`authorize URL does not use expected endpoint "${endpoint}" — got: "${testURL}"`);
+    }
+
+    errors.forEach(e => console.warn('[eBayOAuth] Validation warning:', e));
+    return errors;
   }
 }

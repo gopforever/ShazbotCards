@@ -663,9 +663,10 @@
 <script>
   // Initialize eBay OAuth
   window.ebayOAuth = new eBayOAuth({
-    appID:    CONFIG.ebay.appID,
-    ruName:   CONFIG.ebay.ruName,
-    proxyURL: CONFIG.ebay.proxyURL,
+    appID:       CONFIG.ebay.appID,
+    ruName:      CONFIG.ebay.ruName,
+    proxyURL:    CONFIG.ebay.proxyURL,
+    environment: CONFIG.ebay.environment,
   });
 
   // If user arrived via the "Try Again" link, start the connect flow
