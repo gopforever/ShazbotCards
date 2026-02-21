@@ -28,6 +28,23 @@
 <!-- ── Status Bar ───────────────────────────────────────────────────────── -->
 <div id="status-bar" class="status-bar" role="status" aria-live="polite"></div>
 
+<!-- ── Live eBay Analytics ─────────────────────────────────────────────── -->
+<section class="dash-card live-analytics-section" id="live-analytics-section" aria-label="Live eBay Analytics" style="display:none">
+  <h2 class="section-title"><span class="icon">📡</span> Live eBay Analytics</h2>
+  <div class="live-analytics-controls">
+    <div class="period-picker" role="group" aria-label="Select time period">
+      <button class="period-btn" data-period="TODAY">Today</button>
+      <button class="period-btn active" data-period="LAST_7_DAYS">7 Days</button>
+      <button class="period-btn" data-period="LAST_30_DAYS">30 Days</button>
+      <button class="period-btn" data-period="LAST_90_DAYS">90 Days</button>
+    </div>
+    <button class="btn-primary" id="btn-load-live-data">📊 Load Live Data</button>
+  </div>
+  <div class="live-analytics-status" id="live-analytics-status" style="display:none">
+    <span id="live-analytics-status-text"></span>
+  </div>
+</section>
+
 <!-- ── Upload / Drop Zone ───────────────────────────────────────────────── -->
 <div class="upload-section">
   <div id="dropzone" role="button" tabindex="0" aria-label="Drop zone — click or drag &amp; drop an eBay CSV file here">
@@ -658,6 +675,7 @@
 <script src="js/ebaySync.js"></script>
 <script src="js/ebaySettings.js"></script>
 <script src="js/ebayUI.js"></script>
+<script src="js/ebayAnalytics.js"></script>
 <script src="js/app.js"></script>
 
 <script>

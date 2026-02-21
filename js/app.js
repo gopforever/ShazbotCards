@@ -36,6 +36,7 @@
     setupPerformancePredictor();
     setupDebugMode();
     setupDebugConsoleButton();
+    setupLiveAnalytics();
     renderHistorySidebar();
     loadDefaultCSV();
     if (typeof eBayUI !== 'undefined') eBayUI.injectConfigPanel();
@@ -1842,6 +1843,77 @@
 
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
     downloadText(csv, 'optimized-titles.csv', 'text/csv');
+  }
+
+  // ─── Live eBay Analytics ───────────────────────────────────────────────────
+
+  function setupLiveAnalytics() {
+    if (typeof eBayAnalytics === 'undefined') return;
+
+    const liveSection = document.getElementById('live-analytics-section');
+    if (!liveSection) return;
+
+    // Show panel only when OAuth connected
+    if (localStorage.getItem('ebay-access-token')) {
+      liveSection.style.display = 'block';
+    }
+
+    // Period picker
+    let selectedPeriod = 'LAST_7_DAYS';
+    liveSection.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        liveSection.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPeriod = btn.dataset.period;
+      });
+    });
+
+    // Load Live Data button
+    const loadBtn = document.getElementById('btn-load-live-data');
+    const statusEl = document.getElementById('live-analytics-status');
+    const statusText = document.getElementById('live-analytics-status-text');
+
+    if (!loadBtn) return;
+
+    loadBtn.addEventListener('click', async () => {
+      loadBtn.disabled = true;
+      if (statusEl) statusEl.style.display = 'block';
+      if (statusText) statusText.textContent = 'Connecting to eBay Analytics…';
+
+      try {
+        const result = await eBayAnalytics.fetchTraffic(selectedPeriod, ({ status }) => {
+          if (statusText) statusText.textContent = status;
+        });
+
+        // Also use last synced full items if eBayUI has them
+        const fullSyncedItems = (typeof eBayUI !== 'undefined' && eBayUI.getLastSyncedItems)
+          ? eBayUI.getLastSyncedItems()
+          : [];
+
+        const listings = eBayAnalytics.mapToListingShape(result.listings, fullSyncedItems);
+
+        if (!listings.length) {
+          if (statusText) statusText.textContent = '⚠️ No listing data returned for this period.';
+          loadBtn.disabled = false;
+          return;
+        }
+
+        // Feed into the app's main data pipeline
+        allListings = listings;
+        filteredListings = [...allListings];
+        renderAll();
+
+        const periodLabels = { TODAY: 'Today', LAST_7_DAYS: 'Last 7 Days', LAST_30_DAYS: 'Last 30 Days', LAST_90_DAYS: 'Last 90 Days' };
+        if (statusText) statusText.textContent = `✅ Loaded ${listings.length} listings — ${periodLabels[selectedPeriod]}`;
+        setStatus(`Live data loaded: ${listings.length} listings (${periodLabels[selectedPeriod]})`, 'success');
+
+      } catch (err) {
+        if (statusText) statusText.textContent = `❌ ${err.message}`;
+        setStatus(`Live data failed: ${err.message}`, 'error');
+      } finally {
+        loadBtn.disabled = false;
+      }
+    });
   }
 
 })();
