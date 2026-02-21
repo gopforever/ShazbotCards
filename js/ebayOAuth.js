@@ -195,10 +195,16 @@ class eBayOAuth {
 
   /**
    * The redirect URI registered with eBay (must match the RuName configuration).
+   * Dynamically detects the base path (e.g. '/ShazbotCards') to support
+   * GitHub Pages deployments where the app lives under a sub-path.
    * @returns {string}
    */
   getRedirectURI() {
-    return `${window.location.origin}/ebay-callback.html`;
+    const pathSegments = window.location.pathname.split('/').filter(Boolean);
+    // Use the first segment as the base path only if it isn't a file (no extension)
+    const firstSegment = pathSegments[0];
+    const basePath = (firstSegment && !firstSegment.includes('.')) ? `/${firstSegment}` : '';
+    return `${window.location.origin}${basePath}/ebay-callback.html`;
   }
 
   /** Returns true if an access token is present (user is considered connected). */
