@@ -8,8 +8,10 @@ class PerformancePredictor {
   constructor() {
     this._cache = new Map();
     this._API_ENDPOINT = 'https://models.inference.ai.azure.com/chat/completions';
-    this._MODEL = 'gpt-4o';
+    this._MODEL = 'gpt-4o-mini';
     this._STORAGE_KEY = 'shazbotcards_github_token';
+    this._rateLimitHit = false;       // session-wide flag: if true, skip AI and use fallback for all remaining listings
+    this._requestQueue = Promise.resolve(); // serializes AI calls to avoid simultaneous requests
   }
 
   // ─── Token helpers ──────────────────────────────────────────────────────────
@@ -72,6 +74,7 @@ class PerformancePredictor {
 
   clearCache() {
     this._cache.clear();
+    this._rateLimitHit = false; // allow AI calls again after cache clear
   }
 
   // ─── Main prediction entry point ────────────────────────────────────────────
@@ -87,23 +90,34 @@ class PerformancePredictor {
     const key = this.getCacheKey(listing);
     if (this._cache.has(key)) return this._cache.get(key);
 
-    let prediction;
     const token = this._getToken();
 
-    if (token) {
-      try {
-        prediction = await this.callAI(listing, categoryStats);
-      } catch (err) {
-        console.warn('AI prediction failed, using fallback:', err.message);
-        prediction = this.getFallbackPrediction(listing, categoryStats);
-      }
-    } else {
-      prediction = this.getFallbackPrediction(listing, categoryStats);
+    // If no token or rate limited this session, go straight to fallback
+    if (!token || this._rateLimitHit) {
+      const prediction = this.validatePrediction(this.getFallbackPrediction(listing, categoryStats));
+      this._cache.set(key, prediction);
+      return prediction;
     }
 
-    prediction = this.validatePrediction(prediction);
-    this._cache.set(key, prediction);
-    return prediction;
+    // Serialize AI calls with a 500ms gap between each to avoid simultaneous requests
+    const result = await new Promise((resolve) => {
+      this._requestQueue = this._requestQueue.then(async () => {
+        await new Promise(r => setTimeout(r, 500));
+        try {
+          const prediction = await this.callAI(listing, categoryStats);
+          resolve(this.validatePrediction(prediction));
+        } catch (err) {
+          if (err.message === 'Rate limit exceeded') {
+            this._rateLimitHit = true; // stop all future AI calls this session
+          }
+          console.warn('AI prediction failed, using fallback:', err.message);
+          resolve(this.validatePrediction(this.getFallbackPrediction(listing, categoryStats)));
+        }
+      });
+    });
+
+    this._cache.set(key, result);
+    return result;
   }
 
   // ─── AI prediction ──────────────────────────────────────────────────────────
