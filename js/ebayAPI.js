@@ -263,7 +263,8 @@ class eBayTradingAPI {
           `<EntriesPerPage>${Math.min(200, entriesPerPage)}</EntriesPerPage>` +
           `<PageNumber>${page}</PageNumber>` +
         `</Pagination>` +
-      `</ActiveList>`;
+      `</ActiveList>` +
+      `<GranularityLevel>Fine</GranularityLevel>`;
     return this._call('GetMyeBaySelling', body, { skipCache: true });
   }
 

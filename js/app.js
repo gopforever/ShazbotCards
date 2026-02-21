@@ -744,7 +744,7 @@
         <td class="title-cell">
           <a href="https://www.ebay.com/itm/${esc(l.itemId)}" target="_blank" rel="noopener" class="ebay-link" title="${esc(l.title)}">${esc(truncate(l.title, 50))}</a>
         </td>
-        <td>$${((l.price || 0)).toFixed(2)}</td>
+        <td>${l.price > 0 ? '$' + l.price.toFixed(2) : '—'}</td>
         <td>${(l.totalImpressions || 0).toLocaleString()}</td>
         <td>${fmtPct(l.ctr)}</td>
         <td>${l.totalPageViews || 0}</td>
