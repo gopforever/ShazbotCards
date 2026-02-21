@@ -772,6 +772,11 @@
     });
 
     setupTableSort();
+
+    // Re-apply eBay columns if a sync has been done
+    if (typeof eBayUI !== 'undefined' && typeof eBayUI.reDecorateTable === 'function') {
+      eBayUI.reDecorateTable();
+    }
   }
 
   function toggleDetailRow(tr, listing) {
