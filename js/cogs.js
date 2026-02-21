@@ -7,6 +7,7 @@ const COGS = (() => {
   'use strict';
 
   const STORAGE_KEY = 'shazbot-cogs-settings';
+  const SETTINGS_VERSION = 3; // bump this whenever DEFAULTS.materials structure changes
 
   // ─── Default Settings ──────────────────────────────────────────────────────
 
@@ -33,7 +34,22 @@ const COGS = (() => {
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? Object.assign({}, DEFAULTS, JSON.parse(raw)) : JSON.parse(JSON.stringify(DEFAULTS));
+      if (!raw) return JSON.parse(JSON.stringify(DEFAULTS));
+
+      const saved = JSON.parse(raw);
+
+      // If version mismatch, reset materials to DEFAULTS but keep user's non-material prefs
+      if (!saved._version || saved._version < SETTINGS_VERSION) {
+        const fresh = JSON.parse(JSON.stringify(DEFAULTS));
+        fresh._version = SETTINGS_VERSION;
+        // Preserve user's ebayFeeRate if they customized it
+        if (saved.ebayFeeRate !== undefined) fresh.ebayFeeRate = saved.ebayFeeRate;
+        // Save the fresh version so next load is clean
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh)); } catch(e) {}
+        return fresh;
+      }
+
+      return saved;
     } catch (e) {
       return JSON.parse(JSON.stringify(DEFAULTS));
     }
@@ -41,6 +57,7 @@ const COGS = (() => {
 
   function save(settings) {
     try {
+      settings._version = SETTINGS_VERSION;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (e) { /* ignore */ }
   }
