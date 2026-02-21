@@ -620,8 +620,11 @@ const eBayUI = (() => {
 
 /** Initiate the eBay OAuth flow. */
 function connecteBay() {
-  if (window.ebayOAuth) {
+  if (!window.ebayOAuth) return;
+  try {
     window.ebayOAuth.initiateAuth();
+  } catch (err) {
+    eBayUI.showToast(`❌ ${err.message}`, 'error', 8000);
   }
 }
 
