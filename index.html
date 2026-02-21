@@ -155,6 +155,26 @@
         <div class="kpi-value" id="kpi-health">—</div>
         <div class="kpi-label">Avg Health Score</div>
       </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💵</div>
+        <div class="kpi-value" id="kpi-inventory-value">—</div>
+        <div class="kpi-label">Inventory Value</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-value" id="kpi-total-cogs">—</div>
+        <div class="kpi-label">Est. Total COGS</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-value" id="kpi-net-profit">—</div>
+        <div class="kpi-label">Est. Net Revenue</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-value" id="kpi-avg-margin">—</div>
+        <div class="kpi-label">Avg Margin</div>
+      </div>
     </div>
   </section>
 
@@ -320,6 +340,7 @@
             <th data-col="isPromoted">Status</th>
             <th data-col="top20Pct">Top 20%</th>
             <th data-col="healthScore">Health</th>
+            <th data-col="shippingMethod">Ship</th>
             <th data-col="sport">Sport</th>
             <th data-col="saleProbability">Performance</th>
           </tr>
@@ -379,6 +400,73 @@
           <span id="bulk-status"></span>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ── COGS / Profitability Settings ──────────────────────────────────────── -->
+  <section class="dash-card cogs-section" id="cogs-section" aria-label="COGS &amp; Profitability Settings">
+    <div class="cogs-header" id="cogs-header" style="cursor:pointer" title="Click to expand/collapse">
+      <h2 class="section-title" style="margin:0"><span class="icon">📦</span> COGS &amp; Profitability Settings</h2>
+      <button class="btn-sm btn-secondary" id="btn-cogs-toggle">▼ Expand</button>
+    </div>
+
+    <div id="cogs-body" style="display:none">
+
+      <!-- Shipping Rules -->
+      <div class="cogs-subsection">
+        <h3 class="cogs-subtitle">🚚 Shipping Rules</h3>
+        <div class="cogs-shipping-grid">
+          <div class="cogs-ship-card">
+            <div class="cogs-ship-label">📬 eBay Standard Envelope</div>
+            <div class="cogs-ship-detail">Auto-assigned when price ≤ $<span id="cogs-threshold">20.00</span></div>
+            <div class="cogs-ship-cost">Postage: $<span id="cogs-ese-postage">1.03</span> + Material: $<span id="cogs-ese-material">0.23</span> = <strong>$<span id="cogs-ese-total">1.26</span></strong></div>
+          </div>
+          <div class="cogs-ship-card">
+            <div class="cogs-ship-label">📦 Ground Advantage</div>
+            <div class="cogs-ship-detail">Auto-assigned when price &gt; $<span id="cogs-threshold-2">20.00</span></div>
+            <div class="cogs-ship-cost">Postage: $<span id="cogs-ga-postage">5.08</span> + Material: $<span id="cogs-ga-material">0.20</span> = <strong>$<span id="cogs-ga-total">5.28</span></strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Materials Manager -->
+      <div class="cogs-subsection">
+        <h3 class="cogs-subtitle">🛠 Packaging Materials</h3>
+        <p class="cogs-note">Items marked <strong>✓ Per Sale</strong> are added to every listing's COGS. Edit pack counts and prices to update unit costs automatically.</p>
+        <div class="table-wrap">
+          <table id="cogs-materials-table" aria-label="Packaging materials table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>Pack Count</th>
+                <th>Pack Price</th>
+                <th>Cost/Unit</th>
+                <th>Per Sale</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="cogs-materials-tbody">
+            </tbody>
+          </table>
+        </div>
+        <button class="btn-sm btn-primary" id="btn-add-material" style="margin-top:10px">+ Add Material</button>
+      </div>
+
+      <!-- Per-Sale Cost Breakdown -->
+      <div class="cogs-subsection">
+        <h3 class="cogs-subtitle">🧮 Per-Card Cost Breakdown (Preview)</h3>
+        <div class="cogs-preview-grid">
+          <div class="cogs-preview-card">
+            <div class="cogs-preview-title">📬 eBay Std Envelope (≤ $20)</div>
+            <div class="cogs-preview-example" id="cogs-preview-ese"></div>
+          </div>
+          <div class="cogs-preview-card">
+            <div class="cogs-preview-title">📦 Ground Advantage (&gt; $20)</div>
+            <div class="cogs-preview-example" id="cogs-preview-ga"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
@@ -612,6 +700,7 @@
 <script src="js/ebaySettings.js"></script>
 <script src="js/ebayUI.js"></script>
 <script src="js/ebayAnalytics.js"></script>
+<script src="js/cogs.js"></script>
 <script src="js/app.js"></script>
 
 <script>

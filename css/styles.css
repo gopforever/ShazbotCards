@@ -1324,3 +1324,166 @@ mark.diff-new {
   .score-breakdown { grid-template-columns: 1fr; }
   .context-stats { flex-direction: column; gap: 0.5rem; }
 }
+
+/* ── COGS Section ──────────────────────────────────────────────────────────── */
+
+.cogs-section {
+  margin-bottom: 1.5rem;
+}
+
+.cogs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.cogs-subsection {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #333);
+}
+
+.cogs-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.cogs-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+/* Shipping cards */
+.cogs-shipping-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.cogs-ship-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.cogs-ship-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.cogs-ship-detail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.cogs-ship-cost {
+  font-size: 0.85rem;
+}
+
+/* Materials table inputs */
+.cogs-input {
+  background: transparent;
+  border: 1px solid var(--border, #444);
+  border-radius: 4px;
+  color: var(--text, #e0e0e0);
+  padding: 4px 6px;
+  font-size: 0.82rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cogs-input:focus {
+  outline: none;
+  border-color: var(--primary, #4f6ef7);
+}
+
+.cogs-num {
+  width: 80px;
+  text-align: right;
+}
+
+.cogs-unit-cost {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--green, #4caf50);
+}
+
+/* Preview cards */
+.cogs-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.cogs-preview-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.cogs-preview-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border, #333);
+  padding-bottom: 6px;
+}
+
+.cogs-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 3px 0;
+}
+
+.cogs-minus {
+  color: var(--red, #f44336);
+  opacity: 0.85;
+}
+
+.cogs-total {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border, #333);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cogs-profit { color: var(--green, #4caf50); }
+.cogs-loss   { color: var(--red,   #f44336); }
+
+/* Shipping toggle buttons in table */
+.cogs-ship-toggle {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ship-ese {
+  background: rgba(79, 110, 247, 0.2);
+  color: #7da9ff;
+  border: 1px solid rgba(79, 110, 247, 0.4);
+}
+
+.ship-ga {
+  background: rgba(255, 152, 0, 0.2);
+  color: #ffb74d;
+  border: 1px solid rgba(255, 152, 0, 0.4);
+}
+
+@media (max-width: 700px) {
+  .cogs-shipping-grid,
+  .cogs-preview-grid { grid-template-columns: 1fr; }
+}

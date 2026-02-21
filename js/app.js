@@ -37,6 +37,7 @@
     setupDebugMode();
     setupDebugConsoleButton();
     setupLiveAnalytics();
+    setupCOGSSection();
     renderHistorySidebar();
     applyConnectedModeUI();
     setupHeaderActions();
@@ -595,6 +596,7 @@
   function renderAll() {
     renderKPIs();
     renderKPITrends();
+    renderCOGSKPIs();
     renderPriorityTable();
     renderPromotedSection();
     renderTrendingSection();
@@ -621,6 +623,29 @@
     const healthScores = allListings.map(l => l.healthScore || 0);
     const avgHealth = healthScores.length ? Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length) : 0;
     setText('kpi-health', avgHealth + '/100');
+  }
+
+  // ─── COGS KPI Cards ───────────────────────────────────────────────────────
+
+  function renderCOGSKPIs() {
+    if (typeof COGS === 'undefined') return;
+    // Only show meaningful data when we have real prices (eBay mode)
+    const hasPrice = allListings.some(l => l.price > 0);
+    if (!hasPrice) {
+      setText('kpi-inventory-value', '—');
+      setText('kpi-total-cogs', '—');
+      setText('kpi-net-profit', '—');
+      setText('kpi-avg-margin', '—');
+      return;
+    }
+
+    const settings = COGS.load();
+    const portfolio = COGS.calcPortfolio(allListings, settings);
+
+    setText('kpi-inventory-value', '$' + portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('kpi-total-cogs',      '$' + portfolio.totalCogs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('kpi-net-profit',      '$' + portfolio.totalNetProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('kpi-avg-margin',      portfolio.avgMargin.toFixed(1) + '%');
   }
 
   // ─── Priority Table ────────────────────────────────────────────────────────
@@ -730,6 +755,9 @@
     const sorted = sortListings(filteredListings);
     tbody.innerHTML = '';
 
+    const cogsSettings = typeof COGS !== 'undefined' ? COGS.load() : null;
+    const shipThreshold = cogsSettings ? cogsSettings.shipping.threshold : 20;
+
     sorted.forEach(l => {
       const scoreColor = l.healthBadge === 'green' ? '#4caf50' : l.healthBadge === 'yellow' ? '#ffc107' : '#f44336';
       const tr = document.createElement('tr');
@@ -739,6 +767,14 @@
       // Get cached prediction for badge (if available)
       const pred = predictionCache.get(l.itemId);
       const perfBadgeHtml = buildPerfBadgeHtml(l, pred);
+
+      // Determine shipping method for this listing
+      const autoShip = l.price > shipThreshold ? 'ga' : 'ese';
+      const shipMethod = l.shippingOverride || autoShip;
+      const shipLabel = shipMethod === 'ga' ? '📦 GA' : '📬 ESE';
+      const shipCell = l.price > 0
+        ? `<td><button class="btn-sm cogs-ship-toggle ${shipMethod === 'ga' ? 'ship-ga' : 'ship-ese'}" data-item-id="${esc(l.itemId || l.title)}" data-method="${shipMethod}" title="Click to toggle shipping method">${shipLabel}</button></td>`
+        : `<td><span style="color:var(--text-muted)">—</span></td>`;
 
       tr.innerHTML = `
         <td class="title-cell">
@@ -752,6 +788,7 @@
         <td><span class="promo-badge ${l.isPromoted ? 'promo-yes' : 'promo-no'}">${l.isPromoted ? '✓ Promoted' : 'Organic'}</span></td>
         <td>${fmtPct(l.top20Pct)}</td>
         <td><span class="health-score" style="color:${scoreColor}">${l.healthScore ?? '-'}</span></td>
+        ${shipCell}
         <td><span class="sport-badge sport-${(l.sport || 'other').toLowerCase()}">${esc(l.sport || '?')}</span></td>
         <td class="perf-cell" data-item-id="${esc(l.itemId)}">${perfBadgeHtml}</td>
       `;
@@ -759,6 +796,7 @@
       tr.addEventListener('click', (e) => {
         if (e.target.tagName === 'A') return;
         if (e.target.classList.contains('perf-info-btn') || e.target.closest('.perf-info-btn')) return;
+        if (e.target.classList.contains('cogs-ship-toggle') || e.target.closest('.cogs-ship-toggle')) return;
         toggleDetailRow(tr, l);
       });
 
@@ -772,6 +810,24 @@
       }
 
       tbody.appendChild(tr);
+    });
+
+    // Wire up shipping toggle buttons
+    document.querySelectorAll('.cogs-ship-toggle').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const itemId = btn.dataset.itemId;
+        const currentMethod = btn.dataset.method;
+        const newMethod = currentMethod === 'ga' ? 'ese' : 'ga';
+        const listing = allListings.find(l => (l.itemId || l.title) === itemId);
+        if (listing) {
+          listing.shippingOverride = newMethod;
+          btn.dataset.method = newMethod;
+          btn.textContent = newMethod === 'ga' ? '📦 GA' : '📬 ESE';
+          btn.className = `btn-sm cogs-ship-toggle ${newMethod === 'ga' ? 'ship-ga' : 'ship-ese'}`;
+          renderCOGSKPIs();
+        }
+      });
     });
 
     setupTableSort();
@@ -804,7 +860,7 @@
     detailTr.id = 'detail-row-' + listing.itemId;
     detailTr.className = 'detail-row';
     detailTr.innerHTML = `
-      <td colspan="11">
+      <td colspan="12">
         <div class="detail-panel">
           <div class="detail-grid">
             <div class="detail-item"><label>eBay ID</label><span><a href="https://www.ebay.com/itm/${esc(listing.itemId)}" target="_blank" rel="noopener">${esc(listing.itemId)}</a></span></div>
@@ -1705,6 +1761,141 @@
           }
         });
       }
+    }
+  }
+
+  // ─── COGS Section ─────────────────────────────────────────────────────────
+
+  function setupCOGSSection() {
+    if (typeof COGS === 'undefined') return;
+
+    const settings = COGS.load();
+
+    // Toggle expand/collapse
+    const toggleBtn = document.getElementById('btn-cogs-toggle');
+    const cogsBody  = document.getElementById('cogs-body');
+    const cogsHeader = document.getElementById('cogs-header');
+
+    function toggleCOGS() {
+      const isOpen = cogsBody.style.display !== 'none';
+      cogsBody.style.display = isOpen ? 'none' : 'block';
+      if (toggleBtn) toggleBtn.textContent = isOpen ? '▼ Expand' : '▲ Collapse';
+    }
+    if (toggleBtn) toggleBtn.addEventListener('click', e => { e.stopPropagation(); toggleCOGS(); });
+    if (cogsHeader) cogsHeader.addEventListener('click', toggleCOGS);
+
+    // Render materials table
+    renderCOGSMaterials(settings);
+
+    // Render previews
+    renderCOGSPreviews(settings);
+
+    // Add material button
+    const addBtn = document.getElementById('btn-add-material');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const s = COGS.load();
+        s.materials.push({
+          id: 'mat_' + Date.now(),
+          name: 'New Material',
+          packCount: 100,
+          packPrice: 10.00,
+          unitCost: 0.10,
+          includePerSale: false,
+        });
+        COGS.save(s);
+        renderCOGSMaterials(s);
+        renderCOGSPreviews(s);
+        renderCOGSKPIs();
+      });
+    }
+  }
+
+  function renderCOGSMaterials(settings) {
+    const tbody = document.getElementById('cogs-materials-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    settings.materials.forEach((mat, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input class="cogs-input" type="text" value="${esc(mat.name)}" data-field="name" data-idx="${idx}" /></td>
+        <td><input class="cogs-input cogs-num" type="number" min="1" value="${mat.packCount}" data-field="packCount" data-idx="${idx}" /></td>
+        <td><input class="cogs-input cogs-num" type="number" min="0" step="0.01" value="${mat.packPrice.toFixed(2)}" data-field="packPrice" data-idx="${idx}" /></td>
+        <td class="cogs-unit-cost" id="cogs-unit-${idx}">$${mat.unitCost.toFixed(4)}</td>
+        <td><input type="checkbox" class="cogs-checkbox" data-field="includePerSale" data-idx="${idx}" ${mat.includePerSale ? 'checked' : ''} /></td>
+        <td><button class="btn-sm btn-danger cogs-delete-btn" data-idx="${idx}">🗑</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Wire up inputs
+    tbody.querySelectorAll('.cogs-input, .cogs-checkbox').forEach(el => {
+      el.addEventListener('change', () => {
+        const s = COGS.load();
+        const idx = parseInt(el.dataset.idx, 10);
+        const field = el.dataset.field;
+        if (el.type === 'checkbox') {
+          s.materials[idx][field] = el.checked;
+        } else if (field === 'packCount' || field === 'packPrice') {
+          s.materials[idx][field] = parseFloat(el.value) || 0;
+          // Recalculate unit cost
+          const m = s.materials[idx];
+          m.unitCost = m.packCount > 0 ? m.packPrice / m.packCount : 0;
+          const unitEl = document.getElementById('cogs-unit-' + idx);
+          if (unitEl) unitEl.textContent = '$' + m.unitCost.toFixed(4);
+        } else {
+          s.materials[idx][field] = el.value;
+        }
+        COGS.save(s);
+        renderCOGSPreviews(s);
+        renderCOGSKPIs();
+      });
+    });
+
+    // Wire up delete buttons
+    tbody.querySelectorAll('.cogs-delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = COGS.load();
+        const idx = parseInt(btn.dataset.idx, 10);
+        s.materials.splice(idx, 1);
+        COGS.save(s);
+        renderCOGSMaterials(s);
+        renderCOGSPreviews(s);
+        renderCOGSKPIs();
+      });
+    });
+  }
+
+  function renderCOGSPreviews(settings) {
+    // ESE preview using $5.00 example card
+    const eseExample = COGS.calcListing({ price: 5.00, quantity: 1 }, settings);
+    const eseEl = document.getElementById('cogs-preview-ese');
+    if (eseEl) {
+      eseEl.innerHTML = `
+        <div class="cogs-line">Sale Price: <strong>$5.00</strong></div>
+        <div class="cogs-line cogs-minus">eBay Fee (${(settings.ebayFeeRate*100).toFixed(2)}%): −$${eseExample.ebayFee.toFixed(2)}</div>
+        <div class="cogs-line cogs-minus">Materials: −$${eseExample.materialCost.toFixed(2)}</div>
+        <div class="cogs-line cogs-minus">Shipping (ESE): −$${eseExample.shippingCost.toFixed(2)}</div>
+        <div class="cogs-line cogs-total ${eseExample.netProfit >= 0 ? 'cogs-profit' : 'cogs-loss'}">
+          Net Profit: <strong>$${eseExample.netProfit.toFixed(2)}</strong> (${eseExample.margin.toFixed(1)}%)
+        </div>
+      `;
+    }
+
+    // GA preview using $25.00 example card
+    const gaExample = COGS.calcListing({ price: 25.00, quantity: 1, shippingOverride: 'ga' }, settings);
+    const gaEl = document.getElementById('cogs-preview-ga');
+    if (gaEl) {
+      gaEl.innerHTML = `
+        <div class="cogs-line">Sale Price: <strong>$25.00</strong></div>
+        <div class="cogs-line cogs-minus">eBay Fee (${(settings.ebayFeeRate*100).toFixed(2)}%): −$${gaExample.ebayFee.toFixed(2)}</div>
+        <div class="cogs-line cogs-minus">Materials: −$${gaExample.materialCost.toFixed(2)}</div>
+        <div class="cogs-line cogs-minus">Shipping (GA): −$${gaExample.shippingCost.toFixed(2)}</div>
+        <div class="cogs-line cogs-total ${gaExample.netProfit >= 0 ? 'cogs-profit' : 'cogs-loss'}">
+          Net Profit: <strong>$${gaExample.netProfit.toFixed(2)}</strong> (${gaExample.margin.toFixed(1)}%)
+        </div>
+      `;
     }
   }
 
