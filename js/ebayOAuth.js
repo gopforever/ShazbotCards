@@ -157,7 +157,9 @@ class eBayOAuth {
       'ebay-token-expiry',
       String(Date.now() + tokens.expires_in * 1000)
     );
-    localStorage.setItem('ebay-username', tokens.username || '');
+    if (tokens.username) {
+      localStorage.setItem('ebay-username', tokens.username);
+    }
   }
 
   /** Check whether the stored access token has expired. */
