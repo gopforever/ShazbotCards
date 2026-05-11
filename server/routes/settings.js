@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 
 const ALLOWED_KEYS = [
+  'sportscardspro_api_key',
   'sportscards_api_key', 'sportscards_api_base',
   'tcgplayer_api_key',
   'ebay_client_id', 'ebay_client_secret', 'ebay_redirect_uri', 'ebay_env',
@@ -10,7 +11,7 @@ const ALLOWED_KEYS = [
   'ebay_access_token', 'ebay_refresh_token', 'ebay_token_expiry'
 ];
 
-const SENSITIVE_KEYS = ['ebay_access_token', 'ebay_refresh_token', 'ebay_client_secret', 'sportscards_api_key', 'tcgplayer_api_key'];
+const SENSITIVE_KEYS = ['ebay_access_token', 'ebay_refresh_token', 'ebay_client_secret', 'sportscardspro_api_key', 'sportscards_api_key', 'tcgplayer_api_key'];
 
 function maskValue(key, value) {
   if (SENSITIVE_KEYS.includes(key)) {
