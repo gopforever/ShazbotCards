@@ -38,18 +38,14 @@ async function updateCardPrice(cardId) {
   let priceData = null;
   let source = '';
 
-  try {
-    if ((card.type === 'pokemon' || card.type === 'mtg') && card.tcg_product_id) {
-      priceData = await getTCGPrice(card.tcg_product_id);
-      source = 'tcgplayer';
-    } else if (card.type === 'sports' && card.sportscards_id) {
-      priceData = await getSportsCardPrice(card.sportscards_id);
-      source = 'sportscards';
-    } else {
-      throw new Error('No pricing identifier available for this card');
-    }
-  } catch (err) {
-    throw err;
+  if ((card.type === 'pokemon' || card.type === 'mtg') && card.tcg_product_id) {
+    priceData = await getTCGPrice(card.tcg_product_id);
+    source = 'tcgplayer';
+  } else if (card.type === 'sports' && card.sportscards_id) {
+    priceData = await getSportsCardPrice(card.sportscards_id);
+    source = 'sportscards';
+  } else {
+    throw new Error('No pricing identifier available for this card');
   }
 
   const price = priceData?.market_price || priceData?.price || priceData?.marketPrice || null;

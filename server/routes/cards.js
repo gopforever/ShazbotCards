@@ -159,14 +159,15 @@ router.delete('/:id', (req, res) => {
     if (!card) return res.status(404).json({ error: 'Card not found' });
 
     // Delete associated images from filesystem
-    const images = db.prepare('SELECT file_path FROM card_images WHERE card_id = ?').all(req.params.id);
+    const images = db.prepare('SELECT filename FROM card_images WHERE card_id = ?').all(req.params.id);
     const fs = require('fs');
     const path = require('path');
+    const uploadsDir = path.resolve(process.env.UPLOADS_DIR || './uploads');
     images.forEach(img => {
-      if (fs.existsSync(img.file_path)) fs.unlinkSync(img.file_path);
+      const filePath = path.join(uploadsDir, req.params.id.toString(), img.filename);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     });
     // Try to remove card directory
-    const uploadsDir = path.resolve(process.env.UPLOADS_DIR || './uploads');
     const cardDir = path.join(uploadsDir, req.params.id.toString());
     if (fs.existsSync(cardDir)) {
       try { fs.rmdirSync(cardDir); } catch (e) { /* ignore if not empty */ }

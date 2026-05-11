@@ -18,7 +18,15 @@ function getEbayConfig() {
 }
 
 function getBaseUrl(env) {
-  return env === 'production' ? 'https://api.ebay.com' : 'https://api.sandbox.ebay.com';
+  // Strict allowlist to prevent SSRF - only two known eBay API endpoints
+  if (env === 'production') return 'https://api.ebay.com';
+  return 'https://api.sandbox.ebay.com';
+}
+
+function getFindingApiUrl(env) {
+  // Strict allowlist for eBay Finding API endpoint
+  if (env === 'production') return 'https://svcs.ebay.com/services/search/FindingService/v1';
+  return 'https://svcs.sandbox.ebay.com/services/search/FindingService/v1';
 }
 
 async function getAccessToken() {
@@ -271,9 +279,7 @@ async function endListing(itemId) {
 
 async function findSoldItems(query) {
   const config = getEbayConfig();
-  const findingApiUrl = config.env === 'production'
-    ? 'https://svcs.ebay.com/services/search/FindingService/v1'
-    : 'https://svcs.sandbox.ebay.com/services/search/FindingService/v1';
+  const findingApiUrl = getFindingApiUrl(config.env);
 
   const appId = config.clientId;
   const params = new URLSearchParams({

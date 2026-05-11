@@ -44,7 +44,9 @@ function deleteCardImages(cardId) {
 
   const cardDir = path.join(uploadsDir, cardId.toString());
   if (fs.existsSync(cardDir)) {
-    try { fs.rmdirSync(cardDir); } catch (e) { /* ignore */ }
+    try { fs.rmdirSync(cardDir); } catch (e) {
+      if (e.code !== 'ENOTEMPTY') console.warn('Could not remove card directory:', e.message);
+    }
   }
 
   db.prepare('DELETE FROM card_images WHERE card_id = ?').run(cardId);
