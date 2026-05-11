@@ -87,54 +87,30 @@ export default function Settings() {
         <p className="text-slate-400 text-sm mt-0.5">Configure API keys and preferences</p>
       </div>
 
-      {/* sportscards.com */}
+      {/* SportscardsPro */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 space-y-4">
         <div>
-          <h2 className="text-white font-semibold">sportscards.com API</h2>
+          <h2 className="text-white font-semibold">SportscardsPro API</h2>
           <p className="text-slate-400 text-xs mt-0.5">
-            Get your API key at{' '}
-            <a href="https://www.sportscards.com/api" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
-              sportscards.com/api
+            Your pricing data source for sports cards, Pokémon, and MTG.{' '}
+            <a
+              href="https://www.sportscardspro.com/api-documentation"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-400 hover:text-indigo-300"
+            >
+              View API Docs ↗
             </a>
           </p>
         </div>
         <SettingField
           label="API Key"
-          fieldKey="sportscards_api_key"
-          value={form.sportscards_api_key}
+          fieldKey="sportscardspro_api_key"
+          value={form.sportscardspro_api_key}
           onChange={handleChange}
           masked
-          placeholder="sk_..."
-          helpText="Used for sports card and TCG pricing lookups"
-        />
-        <SettingField
-          label="API Base URL"
-          fieldKey="sportscards_api_base"
-          value={form.sportscards_api_base}
-          onChange={handleChange}
-          placeholder="https://api.sportscards.com/v1"
-        />
-      </div>
-
-      {/* TCGPlayer */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 space-y-4">
-        <div>
-          <h2 className="text-white font-semibold">TCGPlayer API</h2>
-          <p className="text-slate-400 text-xs mt-0.5">
-            Get your API key at{' '}
-            <a href="https://docs.tcgplayer.com/docs" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
-              docs.tcgplayer.com
-            </a>
-          </p>
-        </div>
-        <SettingField
-          label="TCGPlayer API Key"
-          fieldKey="tcgplayer_api_key"
-          value={form.tcgplayer_api_key}
-          onChange={handleChange}
-          masked
-          placeholder="Your TCGPlayer API key"
-          helpText="Used for Pokémon and MTG card pricing"
+          placeholder="Your SportscardsPro API key"
+          helpText="Used for all card pricing lookups — sports, Pokémon, and MTG"
         />
       </div>
 

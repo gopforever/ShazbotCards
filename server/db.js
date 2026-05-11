@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS cards (
   sold_date TEXT,
   ebay_item_id TEXT,
   ebay_listing_url TEXT,
+  sportscardspro_id TEXT,
   tcg_product_id TEXT,
   sportscards_id TEXT,
   created_at TEXT DEFAULT (datetime('now')),
@@ -109,6 +110,14 @@ CREATE INDEX IF NOT EXISTS idx_card_images_card_id ON card_images(card_id);
 CREATE INDEX IF NOT EXISTS idx_price_history_card_id ON price_history(card_id);
 CREATE INDEX IF NOT EXISTS idx_ebay_listings_card_id ON ebay_listings(card_id);
 `);
+
+try {
+  db.prepare("ALTER TABLE cards ADD COLUMN sportscardspro_id TEXT").run();
+} catch (e) {
+  if (!String(e?.message || '').includes('duplicate column name: sportscardspro_id')) {
+    throw e;
+  }
+}
 
 console.log('Database initialized at', dbPath);
 

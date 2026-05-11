@@ -8,7 +8,7 @@ A **complete, production-ready, single-user card inventory web application** for
 
 - 📦 **Full Inventory Management** — Track all Sports, Pokémon, and MTG cards with detailed metadata
 - 🖼️ **Image Storage** — Upload and manage multiple images per card (front, back, other)
-- 💰 **Live Pricing** — Integration with sportscards.com API (sports cards) and TCGPlayer (Pokémon/MTG)
+- 💰 **Live Pricing** — Integration with SportscardsPro API for sports cards, Pokémon, and MTG
 - 🏷️ **eBay Integration** — Full OAuth flow + Inventory/Offer/Finding APIs to create and manage listings
 - 📊 **Dashboard** — Visual stats, charts (Recharts), and profit/loss tracking
 - 🔍 **eBay Sold Comps** — Search recent eBay sold listings for market pricing
@@ -49,7 +49,7 @@ ShazbotCards/
 │   │   └── upload.js         # Multer config
 │   └── services/
 │       ├── ebayService.js    # eBay OAuth + REST API calls
-│       ├── pricingService.js # sportscards.com + TCGPlayer
+│       ├── pricingService.js # SportscardsPro pricing integration
 │       └── imageService.js   # Image management helpers
 ├── client/                   # Vite React app
 │   ├── src/
@@ -99,12 +99,8 @@ EBAY_CLIENT_SECRET=your_ebay_client_secret
 EBAY_REDIRECT_URI=http://localhost:3001/api/ebay/callback
 EBAY_ENV=sandbox  # Change to 'production' for live listings
 
-# sportscards.com API
-SPORTSCARDS_API_KEY=your_sportscards_api_key
-SPORTSCARDS_API_BASE=https://api.sportscards.com/v1
-
-# TCGPlayer
-TCGPLAYER_API_KEY=your_tcgplayer_api_key
+# SportscardsPro API
+SPORTSCARDSPRO_API_KEY=your_sportscardspro_api_key
 ```
 
 > 💡 API keys can also be set through the **Settings** page in the app, which stores them in the database.
@@ -143,17 +139,12 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
    - `https://api.ebay.com/oauth/api_scope/buy.browse`
 7. For eBay listings to work, you also need **Policy IDs** from your eBay Seller Hub (fulfillment, payment, return policies)
 
-### sportscards.com API
+### SportscardsPro API
 
-1. Visit [https://www.sportscards.com/api](https://www.sportscards.com/api)
-2. Sign up for API access
-3. Note your API key and base URL
-
-### TCGPlayer API
-
-1. Visit [https://docs.tcgplayer.com/docs](https://docs.tcgplayer.com/docs)
-2. Apply for API access
-3. Note your public and private API keys
+- Go to https://www.sportscardspro.com/api-documentation
+- Sign up / log in and get your API key
+- Used for: Sports card pricing (baseball, basketball, football, hockey, etc.), Pokémon card pricing, MTG card pricing
+- Add to `.env` as `SPORTSCARDSPRO_API_KEY=...` OR enter it in the app Settings page
 
 ---
 

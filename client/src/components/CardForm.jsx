@@ -10,7 +10,7 @@ const SPORTS = ['baseball','basketball','football','hockey','soccer','golf','ten
 
 const STEPS = ['Card Type', 'Basic Info', 'Type Details', 'Pricing']
 
-function Input({ label, ...props }) {
+function Input({ label, helpText, ...props }) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
@@ -18,6 +18,7 @@ function Input({ label, ...props }) {
         {...props}
         className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 placeholder-slate-500"
       />
+      {helpText && <p className="text-xs text-slate-500 mt-1">{helpText}</p>}
     </div>
   )
 }
@@ -59,6 +60,7 @@ export default function CardForm({ initialData = {}, onSubmit, isSubmitting }) {
     card_color: '', mana_cost: '', card_type: '', foil: false, format_legality: '',
     // Pricing
     purchase_price: '', purchase_date: '', my_price: '',
+    sportscardspro_id: '',
     tcg_product_id: '', sportscards_id: '',
     ...initialData,
     autograph: !!initialData.autograph,
@@ -190,7 +192,6 @@ export default function CardForm({ initialData = {}, onSubmit, isSubmitting }) {
               <Input label="Parallel" value={data.parallel} onChange={e => set('parallel', e.target.value)} placeholder="e.g. Gold Refractor" />
               <Input label="Print Run" type="number" value={data.print_run} onChange={e => set('print_run', e.target.value)} placeholder="e.g. 99" />
               <Input label="Serial Number" value={data.serial_number} onChange={e => set('serial_number', e.target.value)} placeholder="e.g. 42/99" />
-              <Input label="sportscards.com ID" value={data.sportscards_id} onChange={e => set('sportscards_id', e.target.value)} placeholder="For price lookup" />
               <div className="col-span-2 flex flex-wrap gap-4">
                 <Checkbox label="Autograph" checked={data.autograph} onChange={e => set('autograph', e.target.checked)} />
                 <Checkbox label="Relic / Memorabilia" checked={data.relic} onChange={e => set('relic', e.target.checked)} />
@@ -204,7 +205,6 @@ export default function CardForm({ initialData = {}, onSubmit, isSubmitting }) {
               <Input label="Pokémon Name" value={data.pokemon_name} onChange={e => set('pokemon_name', e.target.value)} placeholder="e.g. Charizard" />
               <Input label="HP" type="number" value={data.hp} onChange={e => set('hp', e.target.value)} placeholder="e.g. 150" />
               <Input label="Rarity" value={data.rarity} onChange={e => set('rarity', e.target.value)} placeholder="e.g. Rare Holo V" />
-              <Input label="TCGPlayer Product ID" value={data.tcg_product_id} onChange={e => set('tcg_product_id', e.target.value)} placeholder="For price lookup" />
               <div className="col-span-2 flex flex-wrap gap-4">
                 <Checkbox label="1st Edition" checked={data.first_edition} onChange={e => set('first_edition', e.target.checked)} />
                 <Checkbox label="Shadowless" checked={data.shadowless} onChange={e => set('shadowless', e.target.checked)} />
@@ -220,7 +220,6 @@ export default function CardForm({ initialData = {}, onSubmit, isSubmitting }) {
               <Input label="Mana Cost" value={data.mana_cost} onChange={e => set('mana_cost', e.target.value)} placeholder="e.g. {3}{U}{U}" />
               <Input label="Card Type" value={data.card_type} onChange={e => set('card_type', e.target.value)} placeholder="e.g. Instant, Creature" />
               <Input label="Format Legality" value={data.format_legality} onChange={e => set('format_legality', e.target.value)} placeholder="e.g. Standard, Modern" />
-              <Input label="TCGPlayer Product ID" value={data.tcg_product_id} onChange={e => set('tcg_product_id', e.target.value)} placeholder="For price lookup" />
               <div className="col-span-2">
                 <Checkbox label="Foil" checked={data.foil} onChange={e => set('foil', e.target.checked)} />
               </div>
@@ -237,6 +236,25 @@ export default function CardForm({ initialData = {}, onSubmit, isSubmitting }) {
             <Input label="Purchase Price ($)" type="number" step="0.01" value={data.purchase_price} onChange={e => set('purchase_price', e.target.value)} placeholder="0.00" />
             <Input label="Purchase Date" type="date" value={data.purchase_date} onChange={e => set('purchase_date', e.target.value)} />
             <Input label="My Asking Price ($)" type="number" step="0.01" value={data.my_price} onChange={e => set('my_price', e.target.value)} placeholder="0.00" />
+            <Input
+              label="SportscardsPro Product ID"
+              value={data.sportscardspro_id}
+              onChange={e => set('sportscardspro_id', e.target.value)}
+              placeholder="e.g. 1234567"
+              helpText="Find this ID by searching on PriceLookup page. Used for automatic price updates."
+            />
+            <Input
+              label="TCGPlayer Product ID (Legacy — use SportscardsPro ID instead)"
+              value={data.tcg_product_id}
+              onChange={e => set('tcg_product_id', e.target.value)}
+              placeholder="Legacy field"
+            />
+            <Input
+              label="sportscards.com ID (Legacy — use SportscardsPro ID instead)"
+              value={data.sportscards_id}
+              onChange={e => set('sportscards_id', e.target.value)}
+              placeholder="Legacy field"
+            />
           </div>
         </div>
       )}
