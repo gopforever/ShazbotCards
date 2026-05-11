@@ -8,7 +8,7 @@ const CONDITIONS = [
 ]
 const SPORTS = ['baseball','basketball','football','hockey','soccer','golf','tennis','ufc','wrestling','other']
 
-const STEPS = ['Card Type', 'Basic Info', 'Type Details', 'Pricing', 'Images']
+const STEPS = ['Card Type', 'Basic Info', 'Type Details', 'Pricing']
 
 function Input({ label, ...props }) {
   return (

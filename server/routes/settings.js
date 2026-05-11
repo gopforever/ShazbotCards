@@ -10,18 +10,22 @@ const ALLOWED_KEYS = [
   'ebay_access_token', 'ebay_refresh_token', 'ebay_token_expiry'
 ];
 
+const SENSITIVE_KEYS = ['ebay_access_token', 'ebay_refresh_token', 'ebay_client_secret', 'sportscards_api_key', 'tcgplayer_api_key'];
+
+function maskValue(key, value) {
+  if (SENSITIVE_KEYS.includes(key)) {
+    return value ? '***CONFIGURED***' : '';
+  }
+  return value || '';
+}
+
 // GET /api/settings
 router.get('/', (req, res) => {
   try {
     const settings = db.prepare('SELECT key, value, updated_at FROM settings').all();
     const result = {};
     settings.forEach(row => {
-      // Mask sensitive values
-      if (['ebay_access_token', 'ebay_refresh_token', 'ebay_client_secret', 'sportscards_api_key', 'tcgplayer_api_key'].includes(row.key)) {
-        result[row.key] = row.value ? '***CONFIGURED***' : '';
-      } else {
-        result[row.key] = row.value || '';
-      }
+      result[row.key] = maskValue(row.key, row.value);
     });
     res.json(result);
   } catch (err) {
@@ -54,7 +58,10 @@ router.post('/', (req, res) => {
 router.get('/:key', (req, res) => {
   try {
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(req.params.key);
-    res.json({ key: req.params.key, value: row ? row.value : null });
+    const value = row ? row.value : null;
+    // Mask sensitive values
+    const maskedValue = maskValue(req.params.key, value);
+    res.json({ key: req.params.key, value: maskedValue });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

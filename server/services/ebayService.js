@@ -167,10 +167,19 @@ async function createInventoryItem(sku, cardData, imageUrls) {
   return { sku };
 }
 
-async function createOffer(sku, price, categoryId) {
+async function createOffer(sku, price, categoryId, cardData) {
   const config = getEbayConfig();
   const token = await getAccessToken();
   const baseUrl = getBaseUrl(config.env);
+
+  const descParts = cardData ? [
+    cardData.year, cardData.manufacturer, cardData.player_name || cardData.pokemon_name || cardData.name,
+    cardData.set_name, cardData.card_number ? `#${cardData.card_number}` : null,
+    cardData.condition, cardData.description || cardData.notes
+  ].filter(Boolean) : [];
+  const listingDescription = descParts.length > 0
+    ? descParts.join(' ')
+    : `ShazbotCards listing - SKU: ${sku}`;
 
   const body = {
     sku,
@@ -178,7 +187,7 @@ async function createOffer(sku, price, categoryId) {
     format: 'FIXED_PRICE',
     availableQuantity: 1,
     categoryId,
-    listingDescription: `ShazbotCards inventory item`,
+    listingDescription,
     listingPolicies: {
       fulfillmentPolicyId: getSetting('ebay_fulfillment_policy_id') || '',
       paymentPolicyId: getSetting('ebay_payment_policy_id') || '',
@@ -260,8 +269,12 @@ async function endListing(itemId) {
   const token = await getAccessToken();
   const baseUrl = getBaseUrl(config.env);
 
+  // Sanitize itemId to only allow alphanumeric and hyphens (eBay offer IDs)
+  const safeItemId = String(itemId).replace(/[^a-zA-Z0-9\-]/g, '');
+  if (!safeItemId) throw new Error('Invalid item ID');
+
   // Find the offer for this listing and withdraw it
-  const response = await fetch(`${baseUrl}/sell/inventory/v1/offer/${itemId}/withdraw`, {
+  const response = await fetch(`${baseUrl}/sell/inventory/v1/offer/${safeItemId}/withdraw`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -330,7 +343,6 @@ async function getOrders() {
 
 function mapConditionToEbay(condition) {
   if (!condition) return 'UNGRADED';
-  if (condition.startsWith('PSA 10') || condition.startsWith('BGS 10')) return 'GRADED';
   if (condition.startsWith('PSA') || condition.startsWith('BGS')) return 'GRADED';
   if (condition.includes('NM/M') || condition === 'Raw NM') return 'NEAR_MINT_OR_BETTER';
   if (condition.includes('EX')) return 'EXCELLENT';

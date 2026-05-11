@@ -69,7 +69,7 @@ router.post('/list/:cardId', async (req, res) => {
     else if (card.type === 'mtg') categoryId = '19107';
 
     // Create offer
-    const offer = await ebayService.createOffer(sku, listingPrice, categoryId);
+    const offer = await ebayService.createOffer(sku, listingPrice, categoryId, { ...card, description });
 
     // Publish offer
     const published = await ebayService.publishOffer(offer.offerId);
