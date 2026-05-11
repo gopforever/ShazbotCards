@@ -114,7 +114,9 @@ CREATE INDEX IF NOT EXISTS idx_ebay_listings_card_id ON ebay_listings(card_id);
 try {
   db.prepare("ALTER TABLE cards ADD COLUMN sportscardspro_id TEXT").run();
 } catch (e) {
-  // Column already exists, ignore
+  if (!String(e?.message || '').includes('duplicate column name: sportscardspro_id')) {
+    throw e;
+  }
 }
 
 console.log('Database initialized at', dbPath);

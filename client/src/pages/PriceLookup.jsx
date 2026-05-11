@@ -18,6 +18,10 @@ function pickPrice(data, keys) {
   return keys.map(key => data?.[key]).find(val => val !== undefined && val !== null)
 }
 
+function getProductId(item) {
+  return item.id || item.product_id || item.productId || null
+}
+
 export default function PriceLookup() {
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
@@ -50,10 +54,10 @@ export default function PriceLookup() {
   }
 
   const results = searchData?.results || []
-  const market = pickPrice(productDetail, ['market_price', 'marketPrice', 'price']) ?? pickPrice(productDetail?.prices, ['market'])
-  const low = pickPrice(productDetail, ['low']) ?? pickPrice(productDetail?.prices, ['low'])
-  const mid = pickPrice(productDetail, ['mid']) ?? pickPrice(productDetail?.prices, ['mid'])
-  const high = pickPrice(productDetail, ['high']) ?? pickPrice(productDetail?.prices, ['high'])
+  const market = productDetail ? (pickPrice(productDetail, ['market_price', 'marketPrice', 'price']) ?? pickPrice(productDetail?.prices, ['market'])) : null
+  const low = productDetail ? (pickPrice(productDetail, ['low']) ?? pickPrice(productDetail?.prices, ['low'])) : null
+  const mid = productDetail ? (pickPrice(productDetail, ['mid']) ?? pickPrice(productDetail?.prices, ['mid'])) : null
+  const high = productDetail ? (pickPrice(productDetail, ['high']) ?? pickPrice(productDetail?.prices, ['high'])) : null
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -126,7 +130,7 @@ export default function PriceLookup() {
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
                   {results.map((item, i) => {
-                    const id = item.id || item.product_id || item.productId
+                    const id = getProductId(item)
                     const marketPrice = pickPrice(item, ['market_price', 'marketPrice', 'price']) ?? pickPrice(item?.prices, ['market'])
                     const itemLow = pickPrice(item, ['low']) ?? pickPrice(item?.prices, ['low'])
                     const itemMid = pickPrice(item, ['mid']) ?? pickPrice(item?.prices, ['mid'])

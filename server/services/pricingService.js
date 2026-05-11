@@ -29,7 +29,10 @@ async function searchCards(query, game = null) {
   if (!res.ok) throw new Error(`SportscardsPro search failed: ${res.status} ${res.statusText}`);
   const data = await res.json();
   // API may return { products: [...] } or just an array
-  return Array.isArray(data) ? data : (data.products || data.results || []);
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.products)) return data.products;
+  if (Array.isArray(data?.results)) return data.results;
+  throw new Error('SportscardsPro search response format was unexpected');
 }
 
 /**
@@ -66,11 +69,14 @@ async function getSportsCardPrice(productId) {
  */
 function extractPrice(priceData) {
   return (
+    // Common direct fields
     priceData?.market_price ||
     priceData?.marketPrice ||
     priceData?.price ||
+    // Nested "prices" shape
     priceData?.prices?.market ||
     priceData?.prices?.mid ||
+    // Direct fallback
     priceData?.mid ||
     null
   );
